@@ -1168,7 +1168,7 @@ function buildPopupHtml(ville){
       const nom = `${p.prenom||""} ${(p.nom||"").toUpperCase()}`.trim();
       const marqueTag = c.marquesMatchees.length ? ` <span class="contact-marque">— ${escapeHtml(c.marquesMatchees.join(", "))}</span>` : "";
       return `<div class="contact-row">
-        <span class="contact-role">${escapeHtml(c.priorityLabel)}${marqueTag}</span>
+        <span class="contact-role">${escapeHtml(p.fonction || c.priorityLabel)}${marqueTag}</span>
         <span class="contact-name">${escapeHtml(nom)}</span>
         ${p.telephone ? `<span class="contact-detail">📞 ${escapeHtml(p.telephone)}</span>` : ""}
         ${p.email ? `<span class="contact-detail">✉️ <a href="${gmailLink(p.email)}" target="_blank" rel="noopener">${escapeHtml(p.email)}</a></span>` : ""}
