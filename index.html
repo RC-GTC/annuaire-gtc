@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annuaire — Groupe Tressol-Chabrier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#eef2f5;
+    --surface:#ffffff;
+    --surface-alt:#f5f8fa;
+    --border:#dbe3e9;
+    --text:#1f2d3a;
+    --text-soft:#5b6b7a;
+    --primary:#1b6b8a;
+    --primary-dark:#124a5f;
+    --primary-tint:#e4eef2;
+    --accent:#6b7c93;
+    --danger:#b23b3b;
+    --danger-tint:#f6e8e8;
+    --ok:#2f7d5e;
+    --radius:10px;
+    --shadow: 0 1px 2px rgba(27,50,64,0.06), 0 4px 14px rgba(27,50,64,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.brand{font-family:'Manrope',system-ui,sans-serif;}
+
+  header.topbar{
+    background:linear-gradient(135deg,var(--primary) 0%, var(--primary-dark) 100%);
+    color:#fff;
+    padding:18px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:rgba(255,255,255,0.15);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px;letter-spacing:0.5px;
+    border:1px solid rgba(255,255,255,0.25);
+  }
+  .brand-text h1{margin:0;font-size:17px;font-weight:800;letter-spacing:0.2px;}
+  .brand-text span{font-size:12px;opacity:0.85;}
+
+  .mode-zone{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .mode-pill{
+    font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.28);
+  }
+  .mode-pill.on{background:#fff;color:var(--primary-dark);}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{
+    border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:transform .08s ease, opacity .15s ease;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-ghost-light{background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.3);}
+  .btn-ghost-light:hover{background:rgba(255,255,255,0.2);}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-outline{background:#fff;color:var(--primary);border:1px solid var(--border);}
+  .btn-outline:hover{background:var(--primary-tint);}
+  .btn-danger{background:var(--danger-tint);color:var(--danger);}
+  .btn-danger:hover{background:#f0d6d6;}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+
+  main{max-width:1320px;margin:0 auto;padding:22px 20px 50px;}
+
+  .controls{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    margin-bottom:14px;
+  }
+  .tabs{
+    display:flex;background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:4px;box-shadow:var(--shadow);
+  }
+  .tab{
+    border:none;background:transparent;padding:9px 18px;border-radius:7px;
+    font-size:13.5px;font-weight:600;color:var(--text-soft);
+  }
+  .tab.active{background:var(--primary);color:#fff;}
+
+  .search-wrap{position:relative;flex:1;min-width:200px;}
+  .search-wrap input{
+    width:100%;padding:10px 14px 10px 36px;border-radius:10px;border:1px solid var(--border);
+    font-size:13.5px;background:var(--surface);color:var(--text);
+  }
+  .search-wrap input:focus{outline:2px solid var(--primary);outline-offset:1px;}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:0.45;}
+
+  select.filter-select{
+    padding:9px 12px;border-radius:10px;border:1px solid var(--border);
+    font-size:13.5px;background:var(--surface);color:var(--text);max-width:190px;
+  }
+
+  .count-badge{
+    font-size:12px;font-weight:700;padding:6px 13px;border-radius:99px;
+    background:var(--primary-tint);color:var(--primary-dark);white-space:nowrap;
+  }
+
+  /* Tableau */
+  .table-scroll{
+    max-height:68vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);
+    background:var(--surface);box-shadow:var(--shadow);
+  }
+  table.directory{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;}
+  table.directory thead th{
+    position:sticky;top:0;background:var(--surface-alt);text-align:left;padding:11px 13px;
+    font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-soft);
+    border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;z-index:2;
+  }
+  table.directory thead th:last-child{border-right:none;}
+  table.directory tbody td{padding:10px 13px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;color:var(--text);}
+  table.directory tbody td:last-child{border-right:none;}
+  table.directory tbody tr:nth-child(even){background:var(--surface-alt);}
+  table.directory tbody tr:hover{background:var(--primary-tint);}
+  table.directory tbody tr:last-child td{border-bottom:none;}
+  table.directory td.name-cell{font-weight:700;white-space:nowrap;}
+  .chip-cell{display:flex;flex-wrap:wrap;gap:4px;max-width:220px;}
+  .chip{
+    font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap;
+    background:var(--surface-alt);color:var(--accent);border:1px solid var(--border);
+  }
+  .chip.brand{background:var(--primary-tint);color:var(--primary-dark);border-color:transparent;}
+  .chip.contract-yes{background:#e3f1ea;color:var(--ok);border-color:#cfe8d9;}
+  .mail-link{color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+  .mail-link:hover{text-decoration:underline;}
+  .actions-cell{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap;}
+  .empty-row td{text-align:center;padding:50px 20px;color:var(--text-soft);}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(20,35,45,0.45);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;width:100%;max-width:440px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.25);max-height:88vh;overflow-y:auto;
+  }
+  .modal.wide{max-width:620px;}
+  .modal-head{
+    padding:18px 22px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .modal-head h3{margin:0;font-size:15.5px;}
+  .modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:5px;}
+  .field input, .field select{
+    width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;
+    font-family:inherit;color:var(--text);
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--primary);outline-offset:1px;}
+  .checkbox-group{
+    border:1px solid var(--border);border-radius:8px;padding:9px 11px;max-height:160px;
+    overflow-y:auto;display:flex;flex-direction:column;gap:7px;
+  }
+  .checkbox-group label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);margin:0;}
+  .checkbox-group input[type=checkbox]{width:auto;}
+  .modal-foot{
+    padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;
+  }
+  .close-x{background:none;border:none;font-size:20px;color:var(--text-soft);line-height:1;padding:2px 6px;border-radius:6px;}
+  .close-x:hover{background:var(--surface-alt);}
+
+  .signin-explain{font-size:12.5px;color:var(--text-soft);line-height:1.5;margin:0;}
+  .signin-msg{font-size:12.5px;padding:9px 12px;border-radius:8px;display:none;}
+  .signin-msg.error{display:block;background:var(--danger-tint);color:var(--danger);}
+
+  .log-list{display:flex;flex-direction:column;gap:0;}
+  .log-item{padding:11px 0;border-bottom:1px solid var(--border);font-size:12.5px;display:flex;flex-direction:column;gap:2px;}
+  .log-item:last-child{border-bottom:none;}
+  .log-item .who{font-weight:700;color:var(--text);}
+  .log-item .when{color:var(--text-soft);font-size:11.5px;}
+  .log-action{
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+    padding:2px 7px;border-radius:99px;display:inline-block;margin-right:6px;
+  }
+  .log-action.creation{background:#e3f1ea;color:var(--ok);}
+  .log-action.modification{background:var(--primary-tint);color:var(--primary-dark);}
+  .log-action.suppression{background:var(--danger-tint);color:var(--danger);}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--text);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+    z-index:80;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  @media (max-width:700px){
+    header.topbar{padding:14px 16px;}
+    main{padding:16px 12px 40px;}
+    table.directory{font-size:12.5px;}
+    .modal{max-width:94vw;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">GTC</div>
+    <div class="brand-text">
+      <h1>Annuaire Groupe Tressol-Chabrier</h1>
+      <span>Collaborateurs &amp; fournisseurs</span>
+    </div>
+  </div>
+  <div class="mode-zone">
+    <span class="mode-pill" id="modeIndicator">Consultation</span>
+    <button class="btn btn-ghost-light btn-sm" id="historyBtn" style="display:none;">Historique</button>
+    <button class="btn btn-ghost-light btn-sm" id="exportBtn" style="display:none;">Exporter en Excel</button>
+    <button class="btn btn-ghost-light btn-sm" id="toggleAdminBtn">Activer le mode admin</button>
+  </div>
+</header>
+
+<main>
+  <div class="controls">
+    <div class="tabs">
+      <button class="tab active" data-tab="groupe">Groupe</button>
+      <button class="tab" data-tab="fournisseurs">Fournisseurs</button>
+    </div>
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Rechercher un nom, une ville, une société…">
+    </div>
+    <select class="filter-select" id="filterSelect"></select>
+    <select class="filter-select" id="filterSelect2"></select>
+    <span class="count-badge" id="countBadge"></span>
+    <button class="btn btn-primary btn-sm" id="addBtn" style="display:none;">+ Ajouter une fiche</button>
+  </div>
+
+  <div class="table-scroll">
+    <table class="directory">
+      <thead><tr id="theadRow"></tr></thead>
+      <tbody id="tbody"><tr><td style="padding:40px;text-align:center;color:var(--text-soft);">Chargement de l'annuaire…</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal fiche -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Nouvelle fiche</h3>
+      <button class="close-x" id="closeModalBtn">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="cancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="saveBtn">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal mode admin -->
+<div class="overlay" id="signinOverlay">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head">
+      <h3>Mode admin</h3>
+      <button class="close-x" id="closeSigninBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="signin-explain">Saisis le code d'accès et ton nom (pour l'historique des modifications).</p>
+      <div class="field">
+        <label for="adminNameInput">Ton nom</label>
+        <input type="text" id="adminNameInput" placeholder="Ex : Régis Collin">
+      </div>
+      <div class="field">
+        <label for="adminCodeInput">Code d'accès</label>
+        <input type="password" id="adminCodeInput" placeholder="••••••••">
+      </div>
+      <div class="signin-msg" id="signinMsg"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="signinCancelBtn">Annuler</button>
+      <button class="btn btn-primary" id="signinConfirmBtn">Valider</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal historique -->
+<div class="overlay" id="historyOverlay">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Historique des modifications</h3>
+      <button class="close-x" id="closeHistoryBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="log-list" id="logList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= CONFIGURATION À ADAPTER =================
+const ADMIN_CODE = "GTC66!";
+// URL de déploiement de ton Google Apps Script (voir apps_script_backend.gs) — se termine par /exec
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdIvItr5Ut2VR0aKIdwlV7U-qFBnNI767Gk7-6mFaXssqzyv5sLNOuWI9UTflPQgjP/exec";
+// =============================================================
+
+// ---- Couche de stockage hybride : window.storage (aperçu Claude) ou Apps Script (hébergement externe) ----
+async function backendGet(key){
+  const res = await fetch(`${APPS_SCRIPT_URL}?key=${encodeURIComponent(key)}`);
+  const text = await res.text();
+  if(!text) return null;
+  return { value: text };
+}
+async function backendSet(key, value){
+  try{
+    await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors", // on n'a pas besoin de lire la réponse, seulement que l'écriture ait lieu
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // évite le preflight CORS
+      body: JSON.stringify({ key, value })
+    });
+  }catch(err){
+    throw err;
+  }
+  return { value };
+}
+function backendReady(){
+  return APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REMPLACER_");
+}
+async function storageGet(key, shared){
+  if(typeof window.storage !== "undefined"){
+    try{ return await window.storage.get(key, shared); }catch(e){ /* clé absente, on continue */ }
+  }
+  if(backendReady()) return await backendGet(key);
+  return null;
+}
+async function storageSet(key, value, shared){
+  if(typeof window.storage !== "undefined"){
+    try{ return await window.storage.set(key, value, shared); }catch(e){}
+  }
+  if(backendReady()) return await backendSet(key, value);
+  return null;
+}
+
+
+
+
+// ---- Données initiales (import du 11/07/2026) ----
+const SEED_GROUPE = [{"id": "seed_g_0", "villePrincipale": "Carcassonne", "perimetre": ["Castelnaudary"], "marques": ["Citroën", "Salvaza"], "nom": "Chedot", "prenom": "Virginie", "fonction": "Comptabilité", "telephone": "0468103802", "email": "virginie.chedot@tressol-chabrier.com"}, {"id": "seed_g_1", "villePrincipale": "Groupe", "perimetre": [], "marques": ["Groupe"], "nom": "Colombier", "prenom": "Christophe", "fonction": "Contrôle de gestion RAF", "telephone": "06 58 75 01 75", "email": "christophe.colombier@tressol-chabrier.com"}, {"id": "seed_g_2", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["Audi", "Cupra", "Seat", "Skoda", "VW"], "nom": "Calamia", "prenom": "Estelle", "fonction": "RAF", "telephone": "0688245274", "email": "estelle.calamia@tressol-chabrier.com"}, {"id": "seed_g_3", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["Audi", "Cupra", "Seat", "Skoda", "VW"], "nom": "Corbellini", "prenom": "Richard", "fonction": "Directeur", "telephone": "0662693861", "email": "richard.corbellini@tressol-chabrier.com"}, {"id": "seed_g_4", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["Audi", "Cupra", "Seat", "Skoda", "VW"], "nom": "Da Cruz", "prenom": "Sylvain", "fonction": "Chef APV PR", "telephone": "07 50 56 14 55", "email": "sylvain.dacruz@tressol-chabrier.com"}, {"id": "seed_g_5", "villePrincipale": "Perpignan", "perimetre": ["Béziers", "Carcassonne", "Narbonne"], "marques": ["Opel", "Peugeot"], "nom": "Gonzalez", "prenom": "Jérôme", "fonction": "RAF", "telephone": "0750564165", "email": "jerome.gonzalez@tressol-chabrier.com"}, {"id": "seed_g_6", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["Audi", "Fiat"], "nom": "Miolo", "prenom": "Christophe", "fonction": "PR", "telephone": "0468111384", "email": "magasin@carcassonne-fiat.fr"}, {"id": "seed_g_7", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Alfa Romeo", "Fiat", "Honda Auto", "KIA", "Lancia", "Mitsubishi", "Opel", "Volvo"], "nom": "Miloudi", "prenom": "Hicham", "fonction": "Directeur", "telephone": "0602575698", "email": "hicham.miloudi@tressol-chabrier.com"}, {"id": "seed_g_8", "villePrincipale": "Carcassonne", "perimetre": ["Castelnaudary"], "marques": ["Citroën", "Fiat", "KIA", "Mitsubishi", "Opel", "Volvo"], "nom": "Bonnin", "prenom": "Rodéric", "fonction": "Chef APV PR", "telephone": "0602575854", "email": "roderic.bonnin@tressol-chabrier.com"}, {"id": "seed_g_9", "villePrincipale": "Carcassonne", "perimetre": ["Castelnaudary"], "marques": ["Citroën", "Fiat", "KIA", "Mitsubishi", "Opel", "Volvo"], "nom": "Fabre", "prenom": "Julien", "fonction": "Directeur", "telephone": "0603314805", "email": "julien.fabre@tressol-chabrier.com"}, {"id": "seed_g_10", "villePrincipale": "Perpignan", "perimetre": ["Béziers", "Montpellier", "Narbonne"], "marques": ["Hyundai", "KIA"], "nom": "Berruet", "prenom": "Erwan", "fonction": "RAF", "telephone": "07 56 42 03 39", "email": "erwan.berruet@tressol-chabrier.com"}, {"id": "seed_g_11", "villePrincipale": "Béziers", "perimetre": ["Narbonne"], "marques": ["KIA", "Opel"], "nom": "Thiroux", "prenom": "Laurent", "fonction": "directeur", "telephone": "0602575669", "email": "laurent.thiroux@tressol-chabrier.com"}, {"id": "seed_g_12", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Audi", "Skoda", "VW"], "nom": "Balula", "prenom": "Carlos", "fonction": "Chef APV", "telephone": "0760215217", "email": "carlos.balula@tressol-chabrier.com"}, {"id": "seed_g_13", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Cupra", "Skoda"], "nom": "Ego", "prenom": "Dominique", "fonction": "Directeur", "telephone": "06 80 74 28 62", "email": "dominique.ego@tressol-chabrier.com"}, {"id": "seed_g_14", "villePrincipale": "Béziers", "perimetre": ["Carcassonne", "Montpellier"], "marques": ["Audi", "Cupra", "Skoda", "VW"], "nom": "Halnais", "prenom": "Damien", "fonction": "RAF", "telephone": "0755596763", "email": "damien.halnais@tressol-chabrier.com"}, {"id": "seed_g_15", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Audi", "Cupra", "Skoda", "VW"], "nom": "Hmidouche", "prenom": "Kamal", "fonction": "Responsable PR", "telephone": "04 67 62 86 41", "email": "kamal.hmidouche@tressol-chabrier.com"}, {"id": "seed_g_16", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["Fiat", "Opel", "Volvo"], "nom": "Miolo", "prenom": "Christophe", "fonction": "Responsable PR", "telephone": "0468111384", "email": "magasin@carcassonne-volvo.fr"}, {"id": "seed_g_17", "villePrincipale": "Béziers", "perimetre": ["Frontignan", "Pézénas"], "marques": ["Citroën"], "nom": "Lacroux", "prenom": "Christophe", "fonction": "Responsable PR", "telephone": "04 67 90 43 04", "email": "christophe.lacroux@tressol-chabrier.com"}, {"id": "seed_g_18", "villePrincipale": "Béziers", "perimetre": ["Frontignan", "Narbonne", "Pézénas"], "marques": ["Citroën", "DS"], "nom": "Annat", "prenom": "Gilles", "fonction": "Directeur", "telephone": "0623805791", "email": "gilles.annat@tressol-chabrier.com"}, {"id": "seed_g_19", "villePrincipale": "Perpignan", "perimetre": ["Carcassonne", "Castelnaudary", "Lézignan", "Narbonne"], "marques": ["Citroën", "MG", "Opel"], "nom": "Pastor", "prenom": "Carlos", "fonction": "Responsable PR", "telephone": "06 24 41 42 39", "email": "carlos.pastor@tressol-chabrier.com"}, {"id": "seed_g_20", "villePrincipale": "Montpellier", "perimetre": ["Béziers"], "marques": ["Cupra", "Seat"], "nom": "Labrot", "prenom": "Thierry", "fonction": "Chef APV", "telephone": "0629993837", "email": "thierry.labrot@tressol-chabrier.com"}, {"id": "seed_g_21", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Cupra", "Skoda"], "nom": "Gaignard", "prenom": "Jérôme", "fonction": "Magasinier", "telephone": "04 99 52 62 67", "email": "jerome.gaignard@tressol-chabrier.com"}, {"id": "seed_g_22", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Citroën", "DS", "Groupe", "Peugeot"], "nom": "Cuminal", "prenom": "Pierre", "fonction": "Chef APV / Coordinateur APV PR groupe", "telephone": "0603019492", "email": "pierre.cuminal@tressol-chabrier.com"}, {"id": "seed_g_23", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Citroën", "Peugeot"], "nom": "Julien", "prenom": "Lionel", "fonction": "Chef APV", "telephone": "0772516504", "email": "lionel.julien@tressol-chabrier.com"}, {"id": "seed_g_24", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Citroën", "DS", "Peugeot"], "nom": "Llugany", "prenom": "Julien", "fonction": "Directeur", "telephone": "0698839111", "email": "julien.llugany@tressol-chabrier.com"}, {"id": "seed_g_25", "villePrincipale": "Montpellier", "perimetre": ["Sète"], "marques": ["Citroën", "DS", "Leapmotor", "Peugeot"], "nom": "Dos Santos", "prenom": "David", "fonction": "Chef APV", "telephone": "0659675667", "email": "david.dossantos@tressol-chabrier.com"}, {"id": "seed_g_26", "villePrincipale": "Montpellier", "perimetre": ["Sète"], "marques": ["Citroën", "DS", "Leapmotor", "Peugeot"], "nom": "Cuisson", "prenom": "Tristan", "fonction": "Chef APV", "telephone": "0670655330", "email": "tristan.cuisson@tressol-chabrier.com"}, {"id": "seed_g_27", "villePrincipale": "Auch", "perimetre": [], "marques": ["Fiat", "Jeep"], "nom": "Delamarre", "prenom": "Jérôme", "fonction": "Magasinier", "telephone": "0562055745", "email": "jerome.delamarre@tressol-chabrier.com"}, {"id": "seed_g_28", "villePrincipale": "Perpignan", "perimetre": ["Albi", "Béziers", "Montpellier"], "marques": ["MG", "Volvo"], "nom": "Domenech", "prenom": "David", "fonction": "RAF", "telephone": "0631317643", "email": "david.domenech@tressol-chabrier.com"}, {"id": "seed_g_29", "villePrincipale": "Toulon", "perimetre": ["Ollioules"], "marques": ["Alfa Romeo", "Fiat", "Jeep", "Leapmotor", "Opel"], "nom": "Pujos", "prenom": "Claude", "fonction": "Responsable PR", "telephone": "0494617878", "email": "claude.pujos@tressol-chabrier.com"}, {"id": "seed_g_30", "villePrincipale": "Perpignan", "perimetre": ["Toulon"], "marques": ["Fiat", "Opel"], "nom": "Benchekroun", "prenom": "Malak", "fonction": "Comptabilité", "telephone": "0669482102", "email": "malak.benchekroun@tressol-chabrier.com"}, {"id": "seed_g_31", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Fiat", "Honda Auto", "KIA", "Mitsubishi", "Opel"], "nom": "Guerin", "prenom": "Thierry", "fonction": "Responsable PR", "telephone": "0468681575", "email": "thierry.guerin@tressol-chabrier.com"}, {"id": "seed_g_32", "villePrincipale": "Toulon", "perimetre": ["Ollioules"], "marques": ["Alfa Romeo", "Fiat", "Jeep", "Leapmotor", "Opel"], "nom": "Picano", "prenom": "Jean-Michel", "fonction": "Directeur", "telephone": "0622011119", "email": "jean-michel.picano@tressol-chabrier.com"}, {"id": "seed_g_33", "villePrincipale": "Toulon", "perimetre": ["Ollioules"], "marques": ["Alfa Romeo", "Fiat", "Jeep", "Leapmotor", "Opel"], "nom": "Trova", "prenom": "Philippe", "fonction": "Chef APV", "telephone": "0602575707", "email": "philippe.trova@tressol-chabrier.com"}, {"id": "seed_g_34", "villePrincipale": "Perpignan", "perimetre": ["Montpellier"], "marques": ["Honda Auto"], "nom": "Tuvache", "prenom": "Laurent", "fonction": "Directeur", "telephone": "06 15 67 59 88", "email": "laurent.tuvache@tressol-chabrier.com"}, {"id": "seed_g_35", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Honda Auto", "KIA", "Mitsubishi"], "nom": "Costeceque", "prenom": "Thierry", "fonction": "Chef APV", "telephone": "0624426553", "email": "thierry.costeceque@tressol-chabrier.com"}, {"id": "seed_g_36", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["PMP"], "nom": "Josse", "prenom": "Frédérick", "fonction": "Responsable de site", "telephone": "0675529771", "email": "frederick.josse@tressol-chabrier.com"}, {"id": "seed_g_37", "villePrincipale": "Nîmes", "perimetre": [], "marques": ["Honda Auto", "Volvo"], "nom": "Cano", "prenom": "Damien", "fonction": "Chef APV", "telephone": "0466049292", "email": "damien.cano@tressol-chabrier.com"}, {"id": "seed_g_38", "villePrincipale": "Nîmes", "perimetre": [], "marques": ["Honda Auto", "Volvo"], "nom": "Delvingt", "prenom": "Geoffroy", "fonction": "Magasinier / PR", "telephone": "0466049292", "email": "geoffroy.delvingt@tressol-chabrier.com"}, {"id": "seed_g_39", "villePrincipale": "Montpellier", "perimetre": ["Béziers", "Nîmes"], "marques": ["Honda Auto", "Volvo"], "nom": "Jalageas", "prenom": "Hervé", "fonction": "Directeur", "telephone": "0750568239", "email": "herve.jalageas@tressol-chabrier.com"}, {"id": "seed_g_40", "villePrincipale": "Nîmes", "perimetre": [], "marques": ["Honda Auto", "Volvo"], "nom": "Schneider", "prenom": "Philippe", "fonction": "Responsable de site", "telephone": "0750541125", "email": "philippe.schneider@tressol-chabrier.com"}, {"id": "seed_g_41", "villePrincipale": "Toulouse", "perimetre": ["Albi"], "marques": ["KIA"], "nom": "Woock", "prenom": "Nicolas", "fonction": "RAF", "telephone": "06 50 89 41 72", "email": "nicolas.woock@tressol-chabrier.com"}, {"id": "seed_g_42", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Hyundai", "Suzuki"], "nom": "Galibert", "prenom": "Jean-Pierre", "fonction": "Chef APV", "telephone": "0608073393", "email": "jean-pierre.galibert@tressol-chabrier.com"}, {"id": "seed_g_43", "villePrincipale": "Montpellier", "perimetre": ["Béziers", "Sète"], "marques": ["Hyundai", "Suzuki"], "nom": "Hallier-Gattegno", "prenom": "Richard", "fonction": "Directeur", "telephone": "0607368070", "email": "richard.hallier-gattegno@tressol-chabrier.com"}, {"id": "seed_g_44", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Hyundai", "Suzuki"], "nom": "Malaval", "prenom": "Nicolas", "fonction": "Responsable de site", "telephone": "0649540443", "email": "nicolas.malaval@tressol-chabrier.com"}, {"id": "seed_g_45", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Hyundai", "Suzuki"], "nom": "Ramel", "prenom": "Loïc", "fonction": "Magasinier", "telephone": "0467029060", "email": "loic.ramel@tressol-chabrier.com"}, {"id": "seed_g_46", "villePrincipale": "Albi", "perimetre": [], "marques": ["Jeep", "KIA", "Mitsubishi", "Volvo"], "nom": "Panis", "prenom": "Jérôme", "fonction": "Chef APV", "telephone": "0658385553", "email": "jerome.panis@tressol-chabrier.com"}, {"id": "seed_g_47", "villePrincipale": "Albi", "perimetre": [], "marques": ["Jeep", "KIA", "Mitsubishi", "Volvo"], "nom": "Varennes", "prenom": "Julien", "fonction": "Directeur", "telephone": "0659337761", "email": "julien.varennes@tressol-chabrier.com"}, {"id": "seed_g_48", "villePrincipale": "Montpellier", "perimetre": ["Béziers", "Perpignan"], "marques": ["Jeep", "MG"], "nom": "Morgado", "prenom": "Olivier", "fonction": "Directeur", "telephone": "06 02 57 57 26", "email": "olivier.morgado@tressol-chabrier.com"}, {"id": "seed_g_49", "villePrincipale": "Toulouse", "perimetre": ["Albi", "Labège", "Muret"], "marques": ["KIA"], "nom": "Bornet", "prenom": "Nicolas", "fonction": "Responsable PR", "telephone": "0772516105", "email": "nicolas.bornet@tressol-chabrier.com"}, {"id": "seed_g_50", "villePrincipale": "Toulouse", "perimetre": ["Muret"], "marques": ["KIA"], "nom": "Dumont", "prenom": "Nicolas", "fonction": "Responsable de site Muret / CVO", "telephone": "0772513334", "email": "nicolas.dumont@tressol-chabrier.com"}, {"id": "seed_g_51", "villePrincipale": "Toulouse", "perimetre": ["Labège", "Muret"], "marques": ["KIA"], "nom": "Riquier", "prenom": "Julien", "fonction": "Directeur", "telephone": "0562172113", "email": "julien.riquier@tressol-chabrier.com"}, {"id": "seed_g_52", "villePrincipale": "Béziers", "perimetre": [], "marques": ["KIA", "Mitsubishi"], "nom": "Ledeganck", "prenom": "Grégory", "fonction": "Chef APV", "telephone": "0662960124", "email": "gregory.ledeganck@tressol-chabrier.com"}, {"id": "seed_g_53", "villePrincipale": "Narbonne", "perimetre": ["Lézignan"], "marques": ["Citroën", "DS", "KIA", "Mitsubishi", "Opel"], "nom": "Roques", "prenom": "Clément", "fonction": "Chef APV / Coordinateur APV", "telephone": "0602575847", "email": "clement.roques@tressol-chabrier.com"}, {"id": "seed_g_54", "villePrincipale": "Béziers", "perimetre": ["Carcassonne", "Montpellier", "Perpignan"], "marques": ["LTC"], "nom": "Ambit", "prenom": "Mathieu", "fonction": "Responsable CRVO LTC ", "telephone": "0755596588", "email": "mathieu.ambit@tressol-chabrier.com"}, {"id": "seed_g_55", "villePrincipale": "Carcassonne", "perimetre": [], "marques": ["LTC"], "nom": "Archidoit", "prenom": "Béatrice", "fonction": "Responsable CRVO LTC ", "telephone": "0602575814", "email": "beatrice.archidoit@cite-automobile.com"}, {"id": "seed_g_56", "villePrincipale": "Montpellier", "perimetre": ["Sète"], "marques": ["Citroën", "Leapmotor", "Opel", "Peugeot"], "nom": "Allerback", "prenom": "Sylvie", "fonction": "RAF", "telephone": "0757004735", "email": "sylvie.allerback@tressol-chabrier.com"}, {"id": "seed_g_57", "villePrincipale": "Narbonne", "perimetre": [], "marques": ["KIA", "Opel"], "nom": "Combes", "prenom": "Grégory", "fonction": "Responsable de Site", "telephone": "07 50 56 86 48", "email": "gregory.combes@tressol-chabrier.com"}, {"id": "seed_g_58", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Opel"], "nom": "Ricard", "prenom": "Yann", "fonction": "Chef APV", "telephone": "0499432000", "email": "yann.ricard@tressol-chabrier.com"}, {"id": "seed_g_59", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Peugeot"], "nom": "Barcelo", "prenom": "Ludovic", "fonction": "Responsable PR", "telephone": "06 81 23 44 80", "email": "ludovic.barcelo@tressol-chabrier.com"}, {"id": "seed_g_60", "villePrincipale": "Auch", "perimetre": ["Isle-Jourdain"], "marques": ["Citroën", "DS", "Fiat", "Peugeot"], "nom": "Bisbau", "prenom": "Loic", "fonction": "RAF", "telephone": "0602575736", "email": "loic.bisbau@tressol-chabrier.com"}, {"id": "seed_g_61", "villePrincipale": "Autre", "perimetre": [], "marques": ["Peugeot"], "nom": "Costentin", "prenom": "Sébastien", "fonction": "Responsable PR", "telephone": "", "email": "sebastien.costentin@tressol-chabrier.com"}, {"id": "seed_g_62", "villePrincipale": "Isle-Jourdain", "perimetre": [], "marques": ["Citroën", "Peugeot"], "nom": "Duffau", "prenom": "Florian", "fonction": "Chef APV", "telephone": "07 50 56 93 85", "email": "florian.duffau@tressol-chabrier.com"}, {"id": "seed_g_63", "villePrincipale": "Auch", "perimetre": [], "marques": ["Citroën", "DS", "Peugeot"], "nom": "Laffite", "prenom": "Jerôme", "fonction": "Responsable PR", "telephone": "05 62 60 10 34", "email": "jerome.laffitte@peugeot-auch.fr"}, {"id": "seed_g_64", "villePrincipale": "Autre", "perimetre": [], "marques": ["Peugeot"], "nom": "Meriel", "prenom": "Nicolas", "fonction": "Directeur", "telephone": "0622938732", "email": "nicolas.meriel@tressol-chabrier.com"}, {"id": "seed_g_65", "villePrincipale": "Autre", "perimetre": [], "marques": ["Peugeot"], "nom": "Montagne", "prenom": "Grégory", "fonction": "Chef APV", "telephone": "0686893788", "email": "gregory.montagne@tressol-chabrier.com"}, {"id": "seed_g_66", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["PMP"], "nom": "Champroy", "prenom": "Guillaume", "fonction": "Responsable de site", "telephone": "06 02 57 58 03", "email": "guillaume.champroy@tressol-chabrier.com"}, {"id": "seed_g_67", "villePrincipale": "Montpellier", "perimetre": ["Sète"], "marques": ["Hyundai", "Suzuki"], "nom": "Simon", "prenom": "Quentin", "fonction": "Chef APV", "telephone": "0625854928", "email": "quentin.simon@tressol-chabrier.com"}, {"id": "seed_g_68", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Volvo"], "nom": "Carton", "prenom": "Michaël", "fonction": "Chef APV", "telephone": "0623407682", "email": "atelier.volvoperpignan@tressol-chabrier.com"}, {"id": "seed_g_69", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Volvo"], "nom": "Haspot", "prenom": "Sébastien", "fonction": "Chef APV", "telephone": "0614184740", "email": "sebastien.haspot@tressol-chabrier.com"}, {"id": "seed_g_70", "villePrincipale": "Béziers", "perimetre": [], "marques": ["Volvo"], "nom": "Limouzy", "prenom": "Claude", "fonction": "Chef APV", "telephone": "0683831560", "email": "apv.auto@beziers-honda.com"}, {"id": "seed_g_71", "villePrincipale": "Perpignan", "perimetre": ["Carcassonne", "Montpellier"], "marques": ["Honda Moto", "PMP"], "nom": "Barrot", "prenom": "David", "fonction": "Directeur de l'activité moto", "telephone": "0649541610", "email": "david.barrot@tressol-chabrier.com"}, {"id": "seed_g_72", "villePrincipale": "Montpellier", "perimetre": ["Groupe"], "marques": [], "nom": "Becamel", "prenom": "Benjamin", "fonction": "Directeur VO", "telephone": "07 89 20 96 72", "email": "benjamin.becamel@tressol-chabrier.com"}, {"id": "seed_g_73", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Alfa Romeo", "Fiat", "Lancia", "Opel"], "nom": "Boulanger", "prenom": "Sébastien", "fonction": "Chef APV", "telephone": "0607259437", "email": "sebastien.boulanger@tressol-chabrier.com"}, {"id": "seed_g_74", "villePrincipale": "Toulouse", "perimetre": [], "marques": [], "nom": "Boutillier De Saint-Andre", "prenom": "Fabrice", "fonction": "APV", "telephone": "06 62 81 37 33", "email": "fabrice.boutillier-de-saint-andre@tressol-chabrier.com"}, {"id": "seed_g_75", "villePrincipale": "Pézénas", "perimetre": ["Frontignan"], "marques": ["Citroën"], "nom": "Brazanito", "prenom": "Kévin", "fonction": "Directeur", "telephone": "0684339230", "email": "kevin.brazanito@tressol-chabrier.com"}, {"id": "seed_g_76", "villePrincipale": "Groupe", "perimetre": [], "marques": [], "nom": "Brunet", "prenom": "Thomas", "fonction": "", "telephone": "+33679161338", "email": "thomas.brunet@tressol-chabrier.com"}, {"id": "seed_g_77", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Carrosserie Grand Sud"], "nom": "Campos", "prenom": "André", "fonction": "Chef APV", "telephone": "0629071053", "email": "andre.campos@tressol-chabrier.com"}, {"id": "seed_g_78", "villePrincipale": "Narbonne", "perimetre": ["Lézignan"], "marques": ["Citroën", "DS"], "nom": "Chabanis", "prenom": "Renaud", "fonction": "Directeur", "telephone": "0602575884", "email": "renaud.chabanis@tressol-chabrier.com"}, {"id": "seed_g_79", "villePrincipale": "Perpignan", "perimetre": ["Groupe"], "marques": [], "nom": "Collin", "prenom": "Régis", "fonction": "Directeur APV PR groupe et CRVO", "telephone": "0688245265", "email": "regis.collin@tressol-chabrier.com"}, {"id": "seed_g_80", "villePrincipale": "Montpellier", "perimetre": ["Autre", "Narbonne", "Toulouse"], "marques": [], "nom": "Delmas", "prenom": "François", "fonction": "Directeur", "telephone": "0743366331", "email": "f-delmas@api-cgpa.fr"}, {"id": "seed_g_81", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Citroën", "DS", "Leapmotor", "Opel", "Peugeot"], "nom": "Durou", "prenom": "Maximilien", "fonction": "Responsable PR", "telephone": "0784589244", "email": "maximilien.durou@tressol-chabrier.com"}, {"id": "seed_g_82", "villePrincipale": "Montpellier", "perimetre": [], "marques": ["Carrosserie Grand Sud", "LTC"], "nom": "Duval", "prenom": "Dylan", "fonction": "Réceptionnaire, Responsable CRVO", "telephone": "0618847233", "email": "dylan.duval@tressol-chabrier.com"}, {"id": "seed_g_83", "villePrincipale": "Perpignan", "perimetre": ["Auch", "Autre", "Béziers", "Carcassonne", "Frontignan", "Lézignan", "Narbonne", "Toulon"], "marques": ["Citroën", "DS", "Peugeot"], "nom": "Ferriz", "prenom": "Nathalie", "fonction": "RAF", "telephone": "0647443567", "email": "nathalie.ferriz@tressol-chabrier.com"}, {"id": "seed_g_84", "villePrincipale": "Béziers", "perimetre": ["Carcassonne", "Montpellier"], "marques": ["Audi", "Cupra", "Skoda", "VW"], "nom": "Fontaine", "prenom": "Laurent", "fonction": "Directeur pôle VGF", "telephone": "0602575831", "email": "laurent.fontaine@tressol-chabrier.com"}, {"id": "seed_g_85", "villePrincipale": "Pézénas", "perimetre": ["Frontignan"], "marques": ["Citroën"], "nom": "Hamon", "prenom": "Julien", "fonction": "Chef APV", "telephone": "0666474193", "email": "julien.hamon@tressol-chabrier.com"}, {"id": "seed_g_86", "villePrincipale": "Béziers", "perimetre": [], "marques": ["LTC"], "nom": "Hassan", "prenom": "Hosni", "fonction": "Chef d'équipe APV PR", "telephone": "07 72 45 44 98", "email": "magasin.ltc@tressol-chabrier.com"}, {"id": "seed_g_87", "villePrincipale": "Perpignan", "perimetre": ["Groupe"], "marques": [], "nom": "Jego", "prenom": "Guillaume", "fonction": "DAF groupe", "telephone": "0772514743", "email": "guillaume.jego@tressol-chabrier.com"}, {"id": "seed_g_88", "villePrincipale": "Montpellier", "perimetre": ["Groupe"], "marques": [], "nom": "Lafabregues", "prenom": "Stephane", "fonction": "Responsable RH", "telephone": "+33755586269", "email": "stephane.lafabregues@tressol-chabrier.com"}, {"id": "seed_g_89", "villePrincipale": "Montpellier", "perimetre": ["Groupe"], "marques": [], "nom": "Lefebvre", "prenom": "Sonia", "fonction": "Responsable call center APV", "telephone": "06 21 26 04 81", "email": "sonia.lefebvre@auto-comsolutions.net"}, {"id": "seed_g_90", "villePrincipale": "Béziers", "perimetre": ["Frontignan"], "marques": ["Citroën", "DS"], "nom": "Mercier", "prenom": "Sophie", "fonction": "Chef APV", "telephone": "0785031619", "email": "sophie.mercier@tressol-chabrier.com"}, {"id": "seed_g_91", "villePrincipale": "Auch", "perimetre": [], "marques": ["Citroën", "DS", "Fiat", "Peugeot"], "nom": "Michez", "prenom": "Pascal", "fonction": "Chef APV", "telephone": "0658129449", "email": "pascal.michez@tressol-chabrier.com"}, {"id": "seed_g_92", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Citroën"], "nom": "Monnini", "prenom": "Côme", "fonction": "Responsable de site", "telephone": "0648190740", "email": "comme.monnini@tressol-chabrier.com"}, {"id": "seed_g_93", "villePrincipale": "Perpignan", "perimetre": ["Groupe"], "marques": [], "nom": "Moro", "prenom": "Elodie", "fonction": "Responsable CSP", "telephone": "0664275048", "email": "elodie.moro@tressol-chabrier.com"}, {"id": "seed_g_94", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["LTC"], "nom": "Pages", "prenom": "Sophie", "fonction": "Comptable", "telephone": "0786825557", "email": "sophie.pages@tressol-chabrier.com"}, {"id": "seed_g_95", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["LTC"], "nom": "Raoul", "prenom": "Frédéric", "fonction": "Responsable LTC Perpignan", "telephone": "0772452854", "email": "frederic.raoul@tressol-chabrier.com"}, {"id": "seed_g_96", "villePrincipale": "Narbonne", "perimetre": [], "marques": ["KIA", "Mitsubishi", "Opel"], "nom": "Reffray", "prenom": "Raphael", "fonction": "Chef APV", "telephone": "0611286264", "email": "raphael.reffray@tressol-chabrier.com"}, {"id": "seed_g_97", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Citroën", "MG"], "nom": "Renner", "prenom": "Yann", "fonction": "Chef APV", "telephone": "0616815657", "email": "yann.renner@tressol-chabrier.com"}, {"id": "seed_g_98", "villePrincipale": "Perpignan", "perimetre": [], "marques": ["Promauto"], "nom": "Rezki", "prenom": "Sofiane", "fonction": "Chef APV", "telephone": "0615715770", "email": "sofiane.rezki@tressol-chabrier.com"}];
+const SEED_FOURNISSEURS = [{"id": "seed_f_0", "societe": "3DSOFT", "domaine": "Informatique/DMS", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "R.COLLIN", "prenomInterlocuteur": "", "telephone": "06 88 24 52 65", "email": "regis.collin@tressol-chabrier.com"}, {"id": "seed_f_1", "societe": "A3PRO", "domaine": "Pièces Stellantis/Outillage", "departements": "66, 11, 34,30", "contratGroupe": "O", "nomInterlocuteur": "C.IAFRATE", "prenomInterlocuteur": "", "telephone": "07 61 16 96 43", "email": "cedrick.iafrate@a3pro.fr"}, {"id": "seed_f_2", "societe": "APAVE", "domaine": "Controles périodiques", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "S.GOMEZ", "prenomInterlocuteur": "", "telephone": "06 29 81 38 98", "email": "stephane.gomez@apave.com"}, {"id": "seed_f_3", "societe": "API", "domaine": "Pieces/Outillage/Consommables carrosserie", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "F.DELMAS", "prenomInterlocuteur": "", "telephone": "07 43 36 63 31", "email": "f-delmas@api-cpga.fr"}, {"id": "seed_f_4", "societe": "AXALTA", "domaine": "Peinture", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "T.TOURNIER", "prenomInterlocuteur": "", "telephone": "06 10 64 09 83", "email": "thibaut.tournier@axaltacs.com"}, {"id": "seed_f_5", "societe": "AZ INCENDIE", "domaine": "Incendie", "departements": "66 - PYRENEES-ORIENTALES", "contratGroupe": "O", "nomInterlocuteur": "CINTAS David", "prenomInterlocuteur": "", "telephone": "06 70 49 88 07", "email": "az-incendie@wanadoo.fr"}, {"id": "seed_f_6", "societe": "BERGEVAL", "domaine": "Électricité", "departements": "19 - CORREZE", "contratGroupe": "N", "nomInterlocuteur": "CEROU Laurent", "prenomInterlocuteur": "", "telephone": "06 79 94 31 27", "email": "LCerou@fauche.com"}, {"id": "seed_f_7", "societe": "CLIM ELEC", "domaine": "Électricité", "departements": "66 - PYRENEES-ORIENTALES", "contratGroupe": "N", "nomInterlocuteur": "GUICHARD Jerry", "prenomInterlocuteur": "", "telephone": "04 68 80 00 08", "email": "contact@climelec.com"}, {"id": "seed_f_8", "societe": "CONTINENTAL", "domaine": "Pneumatiques", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "A.BOOMS", "prenomInterlocuteur": "", "telephone": "06 11 27 13 84", "email": "anthony.booms@conti.de"}, {"id": "seed_f_9", "societe": "CRIS", "domaine": "Incendie", "departements": "81 - TARN", "contratGroupe": "O", "nomInterlocuteur": "CHABAUD Tristan", "prenomInterlocuteur": "", "telephone": "05 63 20 36 81", "email": "ste.cris@orange.fr"}, {"id": "seed_f_10", "societe": "DEPANNAGE 31", "domaine": "Maintenance materiels de garage", "departements": "Tous (Hors 83)", "contratGroupe": "O", "nomInterlocuteur": "L.LAHUT", "prenomInterlocuteur": "", "telephone": "06 08 21 40 90", "email": "laurent.lahut@depannages31.com"}, {"id": "seed_f_11", "societe": "DESAUTEL", "domaine": "Incendie", "departements": "19 - CORREZE", "contratGroupe": "N", "nomInterlocuteur": "BOUYSSE Cyril", "prenomInterlocuteur": "", "telephone": "04 73 15 33 45", "email": "clermont-ferrand@desautel.fr"}, {"id": "seed_f_12", "societe": "DO", "domaine": "Électricité", "departements": "81 - TARN", "contratGroupe": "N", "nomInterlocuteur": "DO", "prenomInterlocuteur": "", "telephone": "06 73 48 23 91", "email": "sarl.do.herve@orange.fr"}, {"id": "seed_f_13", "societe": "ECO ELEC", "domaine": "Électricité", "departements": "34 - HERAULT - Hors Béziers", "contratGroupe": "O", "nomInterlocuteur": "DESPAUX Yann", "prenomInterlocuteur": "", "telephone": "06 23 78 58 14", "email": "y.despaux@groupe-aton.com"}, {"id": "seed_f_14", "societe": "EIE", "domaine": "Maintenance des portes et portails motorisés", "departements": "66, 11, 34", "contratGroupe": "N", "nomInterlocuteur": "D.MAILLARD", "prenomInterlocuteur": "", "telephone": "06 21 67 02 32", "email": ""}, {"id": "seed_f_15", "societe": "ELEC 31", "domaine": "Électricité", "departements": "31 - HAUTE GARONNE", "contratGroupe": "N", "nomInterlocuteur": "CACERES Nicolas", "prenomInterlocuteur": "", "telephone": "06 29 54 21 14", "email": "nicolas.caceres@elec-31.fr"}, {"id": "seed_f_16", "societe": "ELIS", "domaine": "Vetements de travail / Sanitaires", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "L.COUDERC", "prenomInterlocuteur": "", "telephone": "06 25 03 26 00", "email": "lionel.couderc@elis.com"}, {"id": "seed_f_17", "societe": "GOODYEAR", "domaine": "Pneumatiques", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "P.MARTINEZ", "prenomInterlocuteur": "", "telephone": "06 87 18 63 60", "email": "philippe_martinez@goodyear.com"}, {"id": "seed_f_18", "societe": "KARCHER", "domaine": "Portiques de lavage", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "B.CANAC", "prenomInterlocuteur": "", "telephone": "06 80 35 88 49", "email": "bruno.canac@karcher.com"}, {"id": "seed_f_19", "societe": "LAVANCE", "domaine": "Portiques de lavage", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "O.ROUQUETTE", "prenomInterlocuteur": "", "telephone": "06 07 68 80 11", "email": "Franck.GUILLOUX@lavance.com"}, {"id": "seed_f_20", "societe": "M-TARGET", "domaine": "Informatique/DMS", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "R.COLLIN", "prenomInterlocuteur": "", "telephone": "06 88 24 52 65", "email": "regis.collin@tressol-chabrier.com"}, {"id": "seed_f_21", "societe": "NICOLLIN", "domaine": "Gestion des déchets", "departements": "34", "contratGroupe": "N", "nomInterlocuteur": "S.RICHOZ", "prenomInterlocuteur": "", "telephone": "06 07 71 50 58", "email": "s.richoz@groupenicollin.com"}, {"id": "seed_f_22", "societe": "NORMANDIE FILTRES", "domaine": "Peinture/Carrosserie", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "JL.CAILLEUX", "prenomInterlocuteur": "", "telephone": "06 09 71 22 38", "email": "jluccailleux@aol.fr"}, {"id": "seed_f_23", "societe": "ORIZON", "domaine": "Détection incendie", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "DA SILVA Jordan\nESCARO Jérémy", "prenomInterlocuteur": "", "telephone": "06 14 80 58 97\n06 29 74 13 09", "email": "direction@orizon-group.com"}, {"id": "seed_f_24", "societe": "PORTIS", "domaine": "Maintenance des portes et portails motorisés", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "F.BLAS", "prenomInterlocuteur": "", "telephone": "06 13 33 42 61", "email": "frederic.blas@fr.otis.com"}, {"id": "seed_f_25", "societe": "PUJADE", "domaine": "Outillage", "departements": "66, 34, 11", "contratGroupe": "N", "nomInterlocuteur": "R.HENRY", "prenomInterlocuteur": "", "telephone": "06 26 36 55 82", "email": "air-comprime-pujade66@wanadoo.fr"}, {"id": "seed_f_26", "societe": "RENOV ELEC 83", "domaine": "Électricité", "departements": "83 - VAR", "contratGroupe": "N", "nomInterlocuteur": "COVOLAN Baptiste", "prenomInterlocuteur": "", "telephone": "06 15 19 35 66", "email": "b.covolan@renovelec83.fr"}, {"id": "seed_f_27", "societe": "SACATEC", "domaine": "Gaz échappement", "departements": "Tous", "contratGroupe": "N", "nomInterlocuteur": "ERNST GUILLAUME", "prenomInterlocuteur": "", "telephone": "07 64 37 97 47", "email": "region-sud@sacatec.fr"}, {"id": "seed_f_28", "societe": "SAFETY KLEEN", "domaine": "Pièces & accessoires", "departements": "tous", "contratGroupe": "O", "nomInterlocuteur": "M.MANSOUR", "prenomInterlocuteur": "", "telephone": "06 30 80 63 25", "email": "mansour.mohad@safetykleen.eu"}, {"id": "seed_f_29", "societe": "SCUTUM", "domaine": "Incendie", "departements": "34 - HERAULT", "contratGroupe": "N", "nomInterlocuteur": "GORINI Gérald", "prenomInterlocuteur": "", "telephone": "06 40 97 40 58", "email": "gerald.gorini@scutum.fr"}, {"id": "seed_f_30", "societe": "SIDEXA", "domaine": "Peinture/Carrosserie", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "G.TEXEIRA", "prenomInterlocuteur": "", "telephone": "07 77 46 50 76", "email": "georges.texeira@sidexa.fr"}, {"id": "seed_f_31", "societe": "SPM", "domaine": "Plaques immatriculations", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "C.POSTILLE", "prenomInterlocuteur": "", "telephone": "06 18 10 91 07", "email": "c.postille@spm-groupe.com"}, {"id": "seed_f_32", "societe": "TAUPIAC", "domaine": "Électricité", "departements": "32 - GERS", "contratGroupe": "O", "nomInterlocuteur": "LACROIX Nathalie", "prenomInterlocuteur": "", "telephone": "05 62 05 14 26", "email": "contact@taupiac-electricite.fr"}, {"id": "seed_f_33", "societe": "TOTAL", "domaine": "Huiles", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "S.DARZENS", "prenomInterlocuteur": "", "telephone": "06 84 52 19 45", "email": "sebastien.darzens@tlsa.total.fr"}, {"id": "seed_f_34", "societe": "TYCO", "domaine": "Détection incendie", "departements": "INSTALLATION APSAD", "contratGroupe": "O", "nomInterlocuteur": "MAZZON Ghislain", "prenomInterlocuteur": "", "telephone": "07 87 43 82 05", "email": "ghislain.mazzon@jci.com"}, {"id": "seed_f_35", "societe": "VEOLIA", "domaine": "Gestion des déchets", "departements": "tous", "contratGroupe": "O", "nomInterlocuteur": "L.MATHEY", "prenomInterlocuteur": "", "telephone": "06 29 96 42 78", "email": "laurent.mathey@veolia.com"}, {"id": "seed_f_36", "societe": "WASHTEC", "domaine": "Portiques de lavage", "departements": "tous", "contratGroupe": "N", "nomInterlocuteur": "S.SEGONDS", "prenomInterlocuteur": "", "telephone": "06 80 64 70 76", "email": "ssegonds@washtec.fr"}, {"id": "seed_f_37", "societe": "WURTH", "domaine": "Outillages/Additifs/Consommables", "departements": "Tous", "contratGroupe": "O", "nomInterlocuteur": "C.TRAPPLER", "prenomInterlocuteur": "", "telephone": "06 67 39 81 68", "email": "christophe.trappler@wurth.fr"}];
+
+const STORAGE_SHARED = true;
+
+const VILLES = ["Groupe","Albi","Auch","Béziers","Carcassonne","Castelnau-le-Lez","Castelnaudary","Frontignan","Isle-Jourdain","Labège","Lézignan","Montpellier","Muret","Narbonne","Nîmes","Ollioules","Perpignan","Pézénas","Sète","Toulon","Toulouse"];
+const MARQUES = ["Toutes marques","Alfa Romeo","Audi","Cap3000","Carrosserie Grand Sud","Citroën","Cupra","DS","Fiat","Groupe","Honda Auto","Honda Moto","Hyundai","Jeep","KIA","Lancia","Leapmotor","LTC","MG","Mitsubishi","Opel","PMP","Peugeot","Promauto","Seat","Skoda","Suzuki","VW","Volvo"];
+const DOMAINES_FOURN = ["Pièces & accessoires","Pneumatiques","Peinture/Carrosserie","Assurance","Outillage","Informatique/DMS","Nettoyage/Entretien","Autre"];
+
+let isAdmin = false;
+let currentAdminUser = null; // {name}
+let currentTab = "groupe";
+let editingId = null;
+let dataStore = { groupe: [], fournisseurs: [] };
+let activityLog = [];
+
+const $ = (sel) => document.querySelector(sel);
+const toastEl = $("#toast");
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(()=>toastEl.classList.remove("show"), 2400);
+}
+
+async function loadData(){
+  const [gResult, fResult, lResult] = await Promise.all([
+    storageGet("annuaire:groupe", STORAGE_SHARED).catch(()=>null),
+    storageGet("annuaire:fournisseurs", STORAGE_SHARED).catch(()=>null),
+    storageGet("annuaire:log", STORAGE_SHARED).catch(()=>null),
+  ]);
+  try{ dataStore.groupe = gResult ? JSON.parse(gResult.value) : []; }catch(e){ dataStore.groupe = []; }
+  try{ dataStore.fournisseurs = fResult ? JSON.parse(fResult.value) : []; }catch(e){ dataStore.fournisseurs = []; }
+  try{ activityLog = lResult ? JSON.parse(lResult.value) : []; }catch(e){ activityLog = []; }
+
+  // Premier chargement : si l'annuaire est encore vide, on l'initialise avec les données importées
+  if(dataStore.groupe.length === 0 && dataStore.fournisseurs.length === 0){
+    dataStore.groupe = SEED_GROUPE.slice();
+    dataStore.fournisseurs = SEED_FOURNISSEURS.slice();
+    await Promise.all([saveList("groupe"), saveList("fournisseurs")]);
+  }
+
+  render();
+}
+
+async function saveList(tab){
+  const key = tab === "groupe" ? "annuaire:groupe" : "annuaire:fournisseurs";
+  try{
+    await storageSet(key, JSON.stringify(dataStore[tab]), STORAGE_SHARED);
+  }catch(e){
+    showToast("Erreur d'enregistrement, réessayez.");
+  }
+}
+
+async function logAction(action, label){
+  const entry = {
+    action, label, tab: currentTab,
+    adminName: currentAdminUser ? currentAdminUser.name : "Inconnu",
+    date: new Date().toISOString()
+  };
+  activityLog.unshift(entry);
+  activityLog = activityLog.slice(0, 300);
+  try{ await storageSet("annuaire:log", JSON.stringify(activityLog), STORAGE_SHARED); }catch(e){}
+}
+
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+
+function renderHistory(){
+  const list = $("#logList");
+  if(activityLog.length === 0){
+    list.innerHTML = `<p style="color:var(--text-soft);font-size:13px;">Aucune action enregistrée pour le moment.</p>`;
+    return;
+  }
+  list.innerHTML = activityLog.map(e=>{
+    const actionLabel = {creation:"Création", modification:"Modification", suppression:"Suppression"}[e.action] || e.action;
+    const tabLabel = e.tab === "groupe" ? "Groupe" : "Fournisseurs";
+    return `<div class="log-item">
+      <div><span class="log-action ${e.action}">${actionLabel}</span><span class="who">${escapeHtml(e.label)}</span> <span style="color:var(--text-soft);">(${tabLabel})</span></div>
+      <div class="when">${escapeHtml(e.adminName)} — ${formatDate(e.date)}</div>
+    </div>`;
+  }).join("");
+}
+
+function buildGroupeRows(){
+  return dataStore.groupe.map(item=>({
+    "Ville principale": item.villePrincipale || "",
+    "Périmètre": asArrayExport(item.perimetre).join(", "),
+    "Marques": asArrayExport(item.marques).join(", "),
+    "Nom": item.nom || "",
+    "Prénom": item.prenom || "",
+    "Fonction": item.fonction || "",
+    "Téléphone": item.telephone || "",
+    "Email": item.email || ""
+  }));
+}
+function buildFournisseurRows(){
+  return dataStore.fournisseurs.map(item=>({
+    "Société": item.societe || "",
+    "Domaine d'intervention": item.domaine || "",
+    "Départements d'intervention": item.departements || "",
+    "Contrat groupe": item.contratGroupe === "O" ? "Oui" : "Non",
+    "Nom interlocuteur": item.nomInterlocuteur || "",
+    "Prénom interlocuteur": item.prenomInterlocuteur || "",
+    "Téléphone": item.telephone || "",
+    "Email": item.email || ""
+  }));
+}
+function buildHistoriqueRows(){
+  return activityLog.map(e=>({
+    "Date": formatDate(e.date),
+    "Admin": e.adminName || "",
+    "Action": {creation:"Création", modification:"Modification", suppression:"Suppression"}[e.action] || e.action,
+    "Élément": e.label || "",
+    "Onglet": e.tab === "groupe" ? "Groupe" : "Fournisseurs"
+  }));
+}
+function asArrayExport(v){ return Array.isArray(v) ? v : (v ? [v] : []); }
+
+function exportToExcel(){
+  if(typeof XLSX === "undefined"){
+    showToast("Bibliothèque Excel indisponible, vérifie ta connexion internet et réessaie.");
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildGroupeRows()), "Groupe");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFournisseurRows()), "Fournisseurs");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildHistoriqueRows()), "Historique");
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `annuaire_gtc_export_${dateStr}.xlsx`);
+  showToast("Export Excel généré.");
+}
+
+function escapeHtml(str){
+  return String(str||"").replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+function asArray(v){ return Array.isArray(v) ? v : (v ? [v] : []); }
+
+// ---- Colonnes ----
+function getColumns(){
+  if(currentTab === "groupe"){
+    return [
+      {key:"nom", label:"Nom"},
+      {key:"prenom", label:"Prénom"},
+      {key:"fonction", label:"Fonction"},
+      {key:"villePrincipale", label:"Ville principale"},
+      {key:"perimetre", label:"Périmètre"},
+      {key:"marques", label:"Marques"},
+      {key:"telephone", label:"Téléphone"},
+      {key:"email", label:"Email"},
+    ];
+  }
+  return [
+    {key:"societe", label:"Société"},
+    {key:"domaine", label:"Domaine d'intervention"},
+    {key:"departements", label:"Départements"},
+    {key:"contratGroupe", label:"Contrat groupe"},
+    {key:"interlocuteur", label:"Interlocuteur"},
+    {key:"telephone", label:"Téléphone"},
+    {key:"email", label:"Email"},
+  ];
+}
+
+function updateFilterOptions(){
+  const sel = $("#filterSelect");
+  const sel2 = $("#filterSelect2");
+  const previousVal = sel.value;
+  const previousVal2 = sel2.value;
+
+  sel.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = ""; optAll.textContent = currentTab === "groupe" ? "Toutes les villes" : "Tous les domaines";
+  sel.appendChild(optAll);
+  const list = currentTab === "groupe" ? VILLES : DOMAINES_FOURN;
+  list.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
+  if(list.includes(previousVal)) sel.value = previousVal;
+
+  if(currentTab === "groupe"){
+    sel2.style.display = "";
+    sel2.innerHTML = "";
+    const optAll2 = document.createElement("option");
+    optAll2.value=""; optAll2.textContent="Toutes les marques";
+    sel2.appendChild(optAll2);
+    MARQUES.forEach(m=>{ const o=document.createElement("option"); o.value=m; o.textContent=m; sel2.appendChild(o); });
+    if(MARQUES.includes(previousVal2)) sel2.value = previousVal2;
+  }else{
+    sel2.style.display = "none";
+    sel2.value = "";
+  }
+}
+
+function haystackOf(item){
+  return Object.values(item).map(v=> Array.isArray(v) ? v.join(" ") : (v||"")).join(" ").toLowerCase();
+}
+
+function render(){
+  updateFilterOptions();
+  $("#modeIndicator").textContent = isAdmin ? `Admin · ${currentAdminUser ? currentAdminUser.name : ""}` : "Consultation";
+  $("#modeIndicator").classList.toggle("on", isAdmin);
+  $("#toggleAdminBtn").textContent = isAdmin ? "Quitter le mode admin" : "Activer le mode admin";
+  $("#historyBtn").style.display = isAdmin ? "inline-flex" : "none";
+  $("#exportBtn").style.display = isAdmin ? "inline-flex" : "none";
+  $("#addBtn").style.display = isAdmin ? "inline-flex" : "none";
+
+  const query = $("#searchInput").value.trim().toLowerCase();
+  const filterVal = $("#filterSelect").value;
+  const filterVal2 = $("#filterSelect2").value;
+  const list = dataStore[currentTab] || [];
+  const isGroupe = currentTab === "groupe";
+
+  const filtered = list.filter(item=>{
+    const matchesQuery = !query || haystackOf(item).includes(query);
+    let matchesFilter = true;
+    if(filterVal){
+      if(isGroupe){
+        matchesFilter = item.villePrincipale === filterVal || asArray(item.perimetre).includes(filterVal);
+      }else{
+        matchesFilter = item.domaine === filterVal;
+      }
+    }
+    let matchesFilter2 = true;
+    if(isGroupe && filterVal2){
+      matchesFilter2 = asArray(item.marques).includes(filterVal2);
+    }
+    return matchesQuery && matchesFilter && matchesFilter2;
+  }).sort((a,b)=>{
+    const an = isGroupe ? (a.nom||"") : (a.societe||"");
+    const bn = isGroupe ? (b.nom||"") : (b.societe||"");
+    return an.localeCompare(bn, "fr");
+  });
+
+  $("#countBadge").textContent = `${filtered.length} fiche${filtered.length>1?"s":""}${(query||filterVal||filterVal2) ? " (filtrées / "+list.length+" au total)" : ""}`;
+
+  renderThead();
+  renderTbody(filtered);
+}
+
+function renderThead(){
+  const cols = getColumns();
+  const row = $("#theadRow");
+  row.innerHTML = cols.map(c=>`<th>${escapeHtml(c.label)}</th>`).join("") + (isAdmin ? `<th style="text-align:right;">Actions</th>` : "");
+}
+
+function renderTbody(filtered){
+  const tbody = $("#tbody");
+  const isGroupe = currentTab === "groupe";
+  const cols = getColumns();
+
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols.length + (isAdmin?1:0)}">
+      ${isAdmin ? "Aucune fiche. Clique sur \"Ajouter une fiche\" pour commencer." : "Aucune fiche pour le moment."}
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(item=>{
+    const cells = cols.map(c=>renderCell(item, c.key, isGroupe)).join("");
+    const actions = isAdmin ? `<td class="actions-cell">
+      <button class="btn btn-outline btn-sm" data-action="edit" data-id="${item.id}">Modifier</button>
+      <button class="btn btn-danger btn-sm" data-action="delete" data-id="${item.id}">Supprimer</button>
+    </td>` : "";
+    return `<tr data-row-id="${item.id}">${cells}${actions}</tr>`;
+  }).join("");
+
+  if(isAdmin){
+    tbody.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+      btn.onclick = ()=>openModal(btn.dataset.id);
+    });
+    tbody.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+      btn.onclick = ()=>deleteEntry(btn.dataset.id);
+    });
+  }
+}
+
+function gmailLink(email){
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}`;
+}
+
+function renderCell(item, key, isGroupe){
+  if(key === "nom"){
+    return `<td class="name-cell">${escapeHtml(item.nom||"—")}</td>`;
+  }
+  if(key === "email"){
+    if(!item.email) return `<td>—</td>`;
+    return `<td><a class="mail-link" href="${gmailLink(item.email)}" target="_blank" rel="noopener">✉️ ${escapeHtml(item.email)}</a></td>`;
+  }
+  if(key === "perimetre" || key === "marques"){
+    const arr = asArray(item[key]);
+    if(arr.length === 0) return `<td>—</td>`;
+    const cls = key === "marques" ? "chip brand" : "chip";
+    return `<td><div class="chip-cell">${arr.map(v=>`<span class="${cls}">${escapeHtml(v)}</span>`).join("")}</div></td>`;
+  }
+  if(key === "contratGroupe"){
+    const isYes = item.contratGroupe === "O";
+    return `<td><span class="chip ${isYes?"contract-yes":""}">${isYes?"Oui":"Non"}</span></td>`;
+  }
+  if(key === "interlocuteur"){
+    const label = `${item.prenomInterlocuteur||""} ${(item.nomInterlocuteur||"").toUpperCase()}`.trim();
+    return `<td>${escapeHtml(label || "—")}</td>`;
+  }
+  if(key === "societe"){
+    return `<td class="name-cell">${escapeHtml(item.societe||"—")}</td>`;
+  }
+  const val = item[key];
+  return `<td>${escapeHtml(val || "—")}</td>`;
+}
+
+// ---- Modal fiche (ajout/édition) ----
+function openModal(id){
+  editingId = id;
+  const isGroupe = currentTab === "groupe";
+  const item = id ? dataStore[currentTab].find(x=>x.id===id) : {};
+  $("#modalTitle").textContent = id ? "Modifier la fiche" : "Nouvelle fiche";
+
+  let fieldsHtml = "";
+  if(isGroupe){
+    fieldsHtml = `
+      ${field("nom","Nom", item.nom, "text", true)}
+      ${field("prenom","Prénom", item.prenom)}
+      ${field("fonction","Fonction", item.fonction)}
+      ${selectField("villePrincipale","Ville principale", item.villePrincipale, VILLES)}
+      ${checkboxGroup("perimetre","Périmètre (autres villes suivies)", asArray(item.perimetre), VILLES)}
+      ${checkboxGroup("marques","Marques", asArray(item.marques), MARQUES)}
+      ${field("telephone","Téléphone", item.telephone)}
+      ${field("email","Email", item.email, "email")}
+    `;
+  }else{
+    fieldsHtml = `
+      ${field("societe","Nom de la société", item.societe, "text", true)}
+      ${selectField("domaine","Domaine d'intervention", item.domaine, DOMAINES_FOURN)}
+      ${field("departements","Départements d'intervention", item.departements, "text")}
+      ${selectField("contratGroupe","Contrat groupe", item.contratGroupe, [{value:"O",label:"Oui"},{value:"N",label:"Non"}])}
+      ${field("nomInterlocuteur","Nom interlocuteur", item.nomInterlocuteur)}
+      ${field("prenomInterlocuteur","Prénom interlocuteur", item.prenomInterlocuteur)}
+      ${field("telephone","Téléphone", item.telephone)}
+      ${field("email","Email", item.email, "email")}
+    `;
+  }
+  $("#modalBody").innerHTML = fieldsHtml;
+  $("#overlay").classList.add("show");
+}
+
+function field(key,label,val,type="text",required=false){
+  return `<div class="field"><label>${label}${required?" *":""}</label><input type="${type}" id="f_${key}" value="${escapeAttr(val||"")}"></div>`;
+}
+function selectField(key,label,val,options){
+  const normalized = options.map(o => typeof o === "string" ? {value:o,label:o} : o);
+  return `<div class="field"><label>${label}</label><select id="f_${key}">
+    <option value="">—</option>
+    ${normalized.map(o=>`<option value="${escapeAttr(o.value)}" ${o.value===val?"selected":""}>${escapeHtml(o.label)}</option>`).join("")}
+  </select></div>`;
+}
+function checkboxGroup(key,label,selectedArray,options){
+  return `<div class="field"><label>${label}</label><div class="checkbox-group" id="grp_${key}">
+    ${options.map(o=>`<label><input type="checkbox" value="${escapeAttr(o)}" ${selectedArray.includes(o)?"checked":""}> ${escapeHtml(o)}</label>`).join("")}
+  </div></div>`;
+}
+function getCheckedValues(key){
+  return Array.from(document.querySelectorAll(`#grp_${key} input:checked`)).map(i=>i.value);
+}
+
+async function handleSave(){
+  const isGroupe = currentTab === "groupe";
+  const simpleKeys = isGroupe
+    ? ["nom","prenom","fonction","villePrincipale","telephone","email"]
+    : ["societe","domaine","departements","contratGroupe","nomInterlocuteur","prenomInterlocuteur","telephone","email"];
+
+  const values = {};
+  simpleKeys.forEach(k=>{ const el = document.getElementById("f_"+k); values[k] = el ? el.value.trim() : ""; });
+
+  if(isGroupe){
+    values.perimetre = getCheckedValues("perimetre");
+    values.marques = getCheckedValues("marques");
+  }
+
+  const requiredKey = isGroupe ? "nom" : "societe";
+  if(!values[requiredKey]){
+    showToast(isGroupe ? "Le nom est obligatoire." : "Le nom de la société est obligatoire.");
+    return;
+  }
+
+  const label = isGroupe ? `${values.prenom} ${values.nom}`.trim() : values.societe;
+  const wasEditing = !!editingId;
+
+  if(editingId){
+    const idx = dataStore[currentTab].findIndex(x=>x.id===editingId);
+    if(idx>-1) dataStore[currentTab][idx] = {...dataStore[currentTab][idx], ...values};
+  }else{
+    values.id = "id_" + Date.now() + "_" + Math.random().toString(36).slice(2,7);
+    dataStore[currentTab].push(values);
+  }
+  $("#saveBtn").disabled = true;
+  $("#saveBtn").textContent = "Enregistrement…";
+  await saveList(currentTab);
+  logAction(wasEditing ? "modification" : "creation", label); // en arrière-plan, pas bloquant
+  $("#saveBtn").disabled = false;
+  $("#saveBtn").textContent = "Enregistrer";
+  closeModal();
+  render();
+  showToast("Fiche enregistrée.");
+}
+
+async function deleteEntry(id){
+  const item = dataStore[currentTab].find(x=>x.id===id);
+  const label = item ? (currentTab==="groupe" ? `${item.prenom||""} ${item.nom||""}`.trim() : item.societe) : "Fiche";
+  if(!confirm("Supprimer définitivement cette fiche ?")) return;
+  dataStore[currentTab] = dataStore[currentTab].filter(x=>x.id!==id);
+  showToast("Suppression en cours…");
+  await saveList(currentTab);
+  logAction("suppression", label); // en arrière-plan, pas bloquant
+  render();
+  showToast("Fiche supprimée.");
+}
+
+function closeModal(){
+  $("#overlay").classList.remove("show");
+  editingId = null;
+}
+
+// ---- Historique ----
+$("#historyBtn").onclick = ()=>{ renderHistory(); $("#historyOverlay").classList.add("show"); };
+$("#exportBtn").onclick = exportToExcel;
+$("#closeHistoryBtn").onclick = ()=> $("#historyOverlay").classList.remove("show");
+$("#historyOverlay").addEventListener("click", e=>{ if(e.target.id==="historyOverlay") $("#historyOverlay").classList.remove("show"); });
+
+// ---- Mode admin (code d'accès) ----
+async function openSigninModal(){
+  $("#signinMsg").className = "signin-msg";
+  $("#signinMsg").textContent = "";
+  $("#adminCodeInput").value = "";
+  try{
+    const saved = await storageGet("annuaire:dernier_nom_admin", false);
+    if(saved) $("#adminNameInput").value = saved.value;
+  }catch(e){}
+  $("#signinOverlay").classList.add("show");
+  $("#adminNameInput").focus();
+}
+function closeSigninModal(){ $("#signinOverlay").classList.remove("show"); }
+
+async function handleAdminLogin(){
+  const name = $("#adminNameInput").value.trim();
+  const code = $("#adminCodeInput").value;
+
+  if(!name){
+    $("#signinMsg").className = "signin-msg error";
+    $("#signinMsg").textContent = "Merci d'indiquer ton nom.";
+    return;
+  }
+  if(code !== ADMIN_CODE){
+    $("#signinMsg").className = "signin-msg error";
+    $("#signinMsg").textContent = "Code incorrect.";
+    return;
+  }
+
+  isAdmin = true;
+  currentAdminUser = { name };
+  try{ await storageSet("annuaire:dernier_nom_admin", name, false); }catch(e){}
+  closeSigninModal();
+  render();
+  showToast(`Mode admin activé pour ${name}.`);
+}
+
+$("#toggleAdminBtn").onclick = ()=>{
+  if(isAdmin){
+    isAdmin = false;
+    currentAdminUser = null;
+    render();
+    showToast("Mode consultation activé.");
+  }else{
+    openSigninModal();
+  }
+};
+$("#closeSigninBtn").onclick = closeSigninModal;
+$("#signinCancelBtn").onclick = closeSigninModal;
+$("#signinConfirmBtn").onclick = handleAdminLogin;
+$("#adminCodeInput").addEventListener("keydown", e=>{ if(e.key==="Enter") handleAdminLogin(); });
+$("#signinOverlay").addEventListener("click", e=>{ if(e.target.id==="signinOverlay") closeSigninModal(); });
+
+// ---- Tabs / recherche / filtres ----
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentTab = btn.dataset.tab;
+    $("#searchInput").value = "";
+    render();
+  };
+});
+$("#searchInput").addEventListener("input", render);
+$("#filterSelect").addEventListener("change", render);
+$("#filterSelect2").addEventListener("change", render);
+$("#addBtn").onclick = ()=> openModal(null);
+
+// ---- Modal fiche wiring ----
+$("#closeModalBtn").onclick = closeModal;
+$("#cancelBtn").onclick = closeModal;
+$("#saveBtn").onclick = handleSave;
+$("#overlay").addEventListener("click", (e)=>{ if(e.target.id==="overlay") closeModal(); });
+
+loadData();
+</script>
+</body>
+</html>
