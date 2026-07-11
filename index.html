@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -117,9 +119,62 @@
 
   /* Tableau */
   .table-scroll{
-    max-height:68vh;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);
+    max-height:calc(100vh - 190px);overflow:auto;border:1px solid var(--border);border-radius:var(--radius);
     background:var(--surface);box-shadow:var(--shadow);
   }
+
+  /* Carte */
+  .gtc-map-tiles{filter:saturate(0.5) brightness(1.1) contrast(0.92);}
+
+  @media print{
+    body.print-map-mode header.topbar,
+    body.print-map-mode .controls,
+    body.print-map-mode .table-scroll,
+    body.print-map-mode .toast,
+    body.print-map-mode .overlay,
+    body.print-map-mode .leaflet-control-zoom{
+      display:none !important;
+    }
+    body.print-map-mode main{padding:0;max-width:none;}
+    body.print-map-mode .map-wrap{border:none;box-shadow:none;padding:0;}
+    body.print-map-mode #mapDiv{height:100vh !important;}
+    body.print-map-mode .map-legend{display:none !important;}
+  }
+  .multi-select{position:relative;}
+  .multi-select-panel{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:30;
+    background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);
+    padding:8px;min-width:200px;max-height:260px;overflow-y:auto;
+  }
+  .multi-select-panel.show{display:flex;flex-direction:column;gap:5px;}
+  .multi-select-panel label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;color:var(--text);padding:3px 4px;border-radius:6px;}
+  .multi-select-panel label:hover{background:var(--surface-alt);}
+  .multi-select-panel input[type=checkbox]{width:auto;}
+  .multi-select-actions{display:flex;justify-content:space-between;gap:8px;padding:2px 4px 8px;margin-bottom:6px;border-bottom:1px solid var(--border);}
+  .link-btn{background:none;border:none;padding:0;font-size:11.5px;font-weight:600;color:var(--primary);cursor:pointer;}
+  .link-btn:hover{text-decoration:underline;}
+  .map-wrap{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px;}
+  #mapDiv{height:70vh;min-height:420px;border-radius:8px;z-index:1;}
+  .leaflet-popup-content-wrapper{border-radius:12px;padding:0;overflow:hidden;box-shadow:0 12px 34px rgba(20,35,45,0.22);}
+  .leaflet-popup-content{margin:0;width:290px !important;}
+  .leaflet-popup-tip{box-shadow:none;}
+  .popup-head{padding:13px 16px;border-bottom:1px solid var(--border);background:var(--surface-alt);}
+  .popup-head h3{margin:0;font-size:14px;font-weight:800;color:var(--text);}
+  .popup-head .sub{font-size:11.5px;color:var(--text-soft);margin-top:2px;}
+  .popup-body{padding:12px 16px 16px;max-height:280px;overflow-y:auto;}
+  .popup-section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-soft);margin:10px 0 6px;}
+  .popup-section-title:first-child{margin-top:0;}
+  .site-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--primary-tint);color:var(--primary-dark);margin:0 5px 5px 0;}
+  .contact-row{display:flex;flex-direction:column;gap:1px;padding:7px 0;border-bottom:1px dashed var(--border);}
+  .contact-row:last-child{border-bottom:none;}
+  .contact-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--primary);}
+  .contact-name{font-size:13px;font-weight:700;color:var(--text);}
+  .contact-detail{font-size:11.5px;color:var(--text-soft);}
+  .contact-detail a{color:var(--primary);text-decoration:none;}
+  .contact-detail a:hover{text-decoration:underline;}
+  .empty-note{font-size:12px;color:var(--text-soft);font-style:italic;padding:6px 0;}
+  .map-legend{display:flex;gap:14px;align-items:center;margin-top:10px;font-size:12px;color:var(--text-soft);flex-wrap:wrap;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;background:var(--primary);display:inline-block;margin-right:5px;}
   table.directory{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;}
   table.directory thead th{
     position:sticky;top:0;background:var(--surface-alt);text-align:left;padding:11px 13px;
@@ -234,9 +289,12 @@
 <main>
   <div class="controls">
     <div class="tabs">
-      <button class="tab active" data-tab="groupe">Groupe</button>
+      <button class="tab active" data-tab="groupe">Collaborateurs</button>
       <button class="tab" data-tab="fournisseurs">Fournisseurs</button>
       <button class="tab" data-tab="concessions">Concessions</button>
+      <button class="tab tab-carte" data-tab="carte">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3-6-3"/><line x1="9" y1="7" x2="9" y2="20"/><line x1="15" y1="4" x2="15" y2="17"/></svg>Carte
+      </button>
     </div>
     <div class="search-wrap">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -244,16 +302,35 @@
     </div>
     <select class="filter-select" id="filterSelect"></select>
     <select class="filter-select" id="filterSelect2"></select>
+    <div class="multi-select" id="marqueMultiSelect" style="display:none;">
+      <button class="btn btn-outline btn-sm" id="marqueMultiBtn" type="button">Marques ▾</button>
+      <div class="multi-select-panel" id="marqueMultiPanel"></div>
+    </div>
     <select class="filter-select" id="filterSelect3" style="display:none;"></select>
     <span class="count-badge" id="countBadge"></span>
+    <button class="btn btn-outline btn-sm" id="printMapBtn" style="display:none;">🖨️ Imprimer la carte</button>
     <button class="btn btn-primary btn-sm" id="addBtn" style="display:none;">+ Ajouter une fiche</button>
   </div>
 
-  <div class="table-scroll">
+  <div class="table-scroll" id="tableScroll">
     <table class="directory">
       <thead><tr id="theadRow"></tr></thead>
       <tbody id="tbody"><tr><td style="padding:40px;text-align:center;color:var(--text-soft);">Chargement de l'annuaire…</td></tr></tbody>
     </table>
+  </div>
+
+  <div class="map-wrap" id="mapWrap" style="display:none;">
+    <div id="mapDiv"></div>
+    <div class="map-legend" id="mapLegend">
+      <span><span class="legend-dot" style="background:#1b6b8a;"></span>Stellantis</span>
+      <span><span class="legend-dot" style="background:#4a90a4;"></span>Asiatiques &amp; Volvo</span>
+      <span><span class="legend-dot" style="background:#6b8fa8;"></span>Volkswagen</span>
+      <span><span class="legend-dot" style="background:#2d4a5c;"></span>Ford</span>
+      <span><span class="legend-dot" style="background:#8fb0c4;"></span>Moto</span>
+      <span><span class="legend-dot" style="background:#3d5a70;"></span>Camions</span>
+      <span><span class="legend-dot" style="background:#4a4a4a;"></span>Sans marque</span>
+      <span><span class="legend-dot" style="background:#5b6b7a;"></span>Plusieurs réseaux</span>
+    </div>
   </div>
 </main>
 
@@ -373,6 +450,18 @@ const VILLES = ["Groupe","Albi","Auch","Béziers","Carcassonne","Castelnau-le-Le
 const MARQUES = ["Toutes marques","Alfa Romeo","Audi","Cap3000","Carrosserie Grand Sud","Citroën","Cupra","DS","Fiat","Fiat Pro","Ford","Groupe","Honda Auto","Honda Moto","Hyundai","Iveco","Jeep","KIA","Lancia","Leapmotor","LTC","Lynk & Co","MAN","Maxus","MG","Mitsubishi","Mazda","Multi marques","Occasions","Opel","PMP","Peugeot","Promauto","Renault","Seat","Skoda","Suzuki","Triumph","VW","Volvo","ZF"];
 const DOMAINES_FOURN = ["Pièces & accessoires","Pneumatiques","Peinture/Carrosserie","Assurance","Outillage","Informatique/DMS","Nettoyage/Entretien","Autre"];
 
+const FONCTION_PRIORITY = [
+  { label: "Directeur", keywords: ["directeur"] },
+  { label: "Chef des ventes", keywords: ["chef des ventes", "chef de vente", "responsable commercial", "responsable des ventes"] },
+  { label: "Chef APV", keywords: ["chef apv", "responsable apv"] },
+  { label: "Responsable magasin", keywords: ["responsable magasin", "responsable pr", "chef magasin", "responsable pièces"] },
+  { label: "Réceptionnaire", keywords: ["réceptionnaire", "receptionnaire", "réception"] },
+  { label: "Chef d'équipe", keywords: ["chef d'équipe", "chef d equipe", "chef equipe"] },
+  { label: "Magasinier", keywords: ["magasinier"] },
+];
+
+const VILLE_COORDS = {"Agde": {"lat": 43.3086, "lon": 3.4756}, "Béziers": {"lat": 43.3442, "lon": 3.2158}, "Castelnau-Le-Lez": {"lat": 43.6367, "lon": 3.9078}, "Clermont-l'Hérault": {"lat": 43.6222, "lon": 3.4344}, "Fabregues": {"lat": 43.5642, "lon": 3.7797}, "Frontignan": {"lat": 43.4472, "lon": 3.7561}, "Ganges": {"lat": 43.9333, "lon": 3.7078}, "Lattes": {"lat": 43.5722, "lon": 3.9147}, "Le Crès": {"lat": 43.6494, "lon": 3.9414}, "Mauguio": {"lat": 43.6156, "lon": 4.0092}, "Montpellier": {"lat": 43.6108, "lon": 3.8767}, "Pézenas": {"lat": 43.4614, "lon": 3.4239}, "Sète": {"lat": 43.4028, "lon": 3.6967}, "Villeneuve-lès-Béziers": {"lat": 43.3239, "lon": 3.2822}, "Carcassonne": {"lat": 43.213, "lon": 2.3491}, "Castelnaudary": {"lat": 43.3153, "lon": 1.9539}, "Lézignan-Corbières": {"lat": 43.1961, "lon": 2.7597}, "Narbonne": {"lat": 43.1839, "lon": 3.0039}, "Perpignan": {"lat": 42.6986, "lon": 2.8956}, "Aucamville": {"lat": 43.6733, "lon": 1.4139}, "Colomiers": {"lat": 43.6114, "lon": 1.335}, "Muret": {"lat": 43.4611, "lon": 1.3272}, "Portet-Sur-Garonne": {"lat": 43.5225, "lon": 1.4108}, "Ramonville Saint Agne": {"lat": 43.5533, "lon": 1.4753}, "Saint-Jory": {"lat": 43.7397, "lon": 1.3958}, "Toulouse": {"lat": 43.6047, "lon": 1.4442}, "Albi": {"lat": 43.9298, "lon": 2.148}, "Arveyres": {"lat": 44.8961, "lon": -0.2733}, "Begles": {"lat": 44.8114, "lon": -0.5544}, "Bruges": {"lat": 44.8756, "lon": -0.5964}, "La Teste De Buch": {"lat": 44.6297, "lon": -1.1494}, "Langon": {"lat": 44.5486, "lon": -0.2464}, "Lormont": {"lat": 44.8697, "lon": -0.5397}, "Auch": {"lat": 43.6465, "lon": 0.5858}, "L'Isle Jourdain": {"lat": 43.6167, "lon": 1.0833}, "La Valette-du-Var": {"lat": 43.1381, "lon": 5.9683}, "Ollioules": {"lat": 43.1381, "lon": 5.8494}, "Nîmes": {"lat": 43.8367, "lon": 4.3601}, "Fleury-Merogis": {"lat": 48.6903, "lon": 2.3489}, "Brive-La-Gaillarde": {"lat": 45.16, "lon": 1.5333}, "Tulle": {"lat": 45.2667, "lon": 1.7714}, "Rochefort": {"lat": 45.9425, "lon": -0.9578}, "Saint-Georges Des Coteaux": {"lat": 45.7728, "lon": -0.8767}, "Tonnay-Charente": {"lat": 45.9467, "lon": -0.8814}, "Limoges": {"lat": 45.8336, "lon": 1.2611}, "Gond-Pontouvre": {"lat": 45.6858, "lon": 0.1633}, "Boulazac": {"lat": 45.1519, "lon": 0.7739}, "La Feuillade": {"lat": 45.2492, "lon": 1.2072}, "Saint-Laurent-Des-Vignes": {"lat": 44.825, "lon": 0.4917}, "Sarlat": {"lat": 44.89, "lon": 1.2167}, "Trelissac": {"lat": 45.1953, "lon": 0.7797}, "Labastide Marnhac": {"lat": 44.4194, "lon": 1.3833}, "Ibos": {"lat": 43.2569, "lon": 0.0439}, "Bayonne": {"lat": 43.4933, "lon": -1.4753}, "Lescar": {"lat": 43.3269, "lon": -0.4219}, "Lafox": {"lat": 44.2153, "lon": 0.665}, "Montauban": {"lat": 44.0175, "lon": 1.3547}, "Clermont-Ferrand": {"lat": 45.7772, "lon": 3.087}, "Saint-Paul-lès-Dax": {"lat": 43.7167, "lon": -1.0667}};
+
 let isAdmin = false;
 let currentAdminUser = null; // {name}
 let currentTab = "groupe";
@@ -448,7 +537,7 @@ function renderHistory(){
   }
   list.innerHTML = activityLog.map(e=>{
     const actionLabel = {creation:"Création", modification:"Modification", suppression:"Suppression"}[e.action] || e.action;
-    const tabLabel = e.tab === "groupe" ? "Groupe" : (e.tab === "concessions" ? "Concessions" : "Fournisseurs");
+    const tabLabel = e.tab === "groupe" ? "Collaborateurs" : (e.tab === "concessions" ? "Concessions" : "Fournisseurs");
     return `<div class="log-item">
       <div><span class="log-action ${e.action}">${actionLabel}</span><span class="who">${escapeHtml(e.label)}</span> <span style="color:var(--text-soft);">(${tabLabel})</span></div>
       <div class="when">${escapeHtml(e.adminName)} — ${formatDate(e.date)}</div>
@@ -509,7 +598,7 @@ function buildHistoriqueRows(){
     "Admin": e.adminName || "",
     "Action": {creation:"Création", modification:"Modification", suppression:"Suppression"}[e.action] || e.action,
     "Élément": e.label || "",
-    "Onglet": e.tab === "groupe" ? "Groupe" : (e.tab === "concessions" ? "Concessions" : "Fournisseurs")
+    "Onglet": e.tab === "groupe" ? "Collaborateurs" : (e.tab === "concessions" ? "Concessions" : "Fournisseurs")
   }));
 }
 function asArrayExport(v){ return Array.isArray(v) ? v : (v ? [v] : []); }
@@ -520,7 +609,7 @@ function exportToExcel(){
     return;
   }
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildGroupeRows()), "Groupe");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildGroupeRows()), "Collaborateurs");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildFournisseurRows()), "Fournisseurs");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildConcessionsRows()), "Concessions");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(buildHistoriqueRows()), "Historique");
@@ -577,6 +666,7 @@ function updateFilterOptions(){
   const sel = $("#filterSelect");
   const sel2 = $("#filterSelect2");
   const sel3 = $("#filterSelect3");
+  sel.style.display = "";
   const previousVal = sel.value;
   const previousVal2 = sel2.value;
   const previousVal3 = sel3.value;
@@ -626,6 +716,24 @@ function haystackOf(item){
 }
 
 function render(){
+  const isCarteTab = currentTab === "carte";
+  $("#tableScroll").style.display = isCarteTab ? "none" : "";
+  $("#mapWrap").style.display = isCarteTab ? "" : "none";
+  $("#addBtn").style.display = (isAdmin && !isCarteTab) ? "inline-flex" : "none";
+
+  if(isCarteTab){
+    $("#filterSelect").style.display = "none";
+    $("#filterSelect3").style.display = "none";
+    $("#filterSelect2").style.display = "none";
+    $("#marqueMultiSelect").style.display = "";
+    $("#printMapBtn").style.display = "inline-flex";
+    buildMarqueMultiPanel();
+    renderCarteTab();
+    return;
+  }
+  $("#marqueMultiSelect").style.display = "none";
+  $("#printMapBtn").style.display = "none";
+
   updateFilterOptions();
   $("#modeIndicator").textContent = isAdmin ? `Admin · ${currentAdminUser ? currentAdminUser.name : ""}` : "Consultation";
   $("#modeIndicator").classList.toggle("on", isAdmin);
@@ -996,6 +1104,211 @@ $("#closeModalBtn").onclick = closeModal;
 $("#cancelBtn").onclick = closeModal;
 $("#saveBtn").onclick = handleSave;
 $("#overlay").addEventListener("click", (e)=>{ if(e.target.id==="overlay") closeModal(); });
+
+// ---- Carte de France (Leaflet / OpenStreetMap) ----
+let leafletMap = null;
+let markersLayer = null;
+let mapInitDone = false;
+
+function findContactsForVille(ville, marquesAtSite){
+  const matches = [];
+  dataStore.groupe.forEach(p => {
+    const villeMatch = p.villePrincipale === ville || asArray(p.perimetre).includes(ville);
+    if(!villeMatch) return;
+    const personMarques = asArray(p.marques);
+    const marqueMatch = marquesAtSite.some(m => personMarques.includes(m));
+    if(!marqueMatch) return;
+    const fonctionText = (p.fonction||"").toLowerCase();
+    let priorityIdx = -1, priorityLabel = null;
+    for(let i=0;i<FONCTION_PRIORITY.length;i++){
+      if(FONCTION_PRIORITY[i].keywords.some(k => fonctionText.includes(k))){ priorityIdx = i; priorityLabel = FONCTION_PRIORITY[i].label; break; }
+    }
+    if(priorityIdx === -1) return;
+    matches.push({ person: p, priority: priorityIdx, priorityLabel });
+  });
+  matches.sort((a,b)=> a.priority - b.priority);
+  return matches;
+}
+
+function getVilleConcessions(ville){
+  return dataStore.concessions.filter(c => c.ville === ville);
+}
+
+function buildPopupHtml(ville){
+  const sites = getVilleConcessions(ville);
+  const marquesVille = new Set();
+  sites.forEach(s => asArray(s.marques).forEach(m=>marquesVille.add(m)));
+  const contacts = findContactsForVille(ville, Array.from(marquesVille));
+
+  let html = `<div class="popup-head"><h3>${escapeHtml(ville)}</h3><div class="sub">${sites.length} établissement${sites.length>1?"s":""} du groupe</div></div>`;
+  html += `<div class="popup-body">`;
+  html += `<div class="popup-section-title">Établissements</div>`;
+  html += sites.map(s => {
+    const marquesTxt = asArray(s.marques).join(", ") || s.societe;
+    return `<span class="site-chip">${escapeHtml(s.etablissement || s.societe)} — ${escapeHtml(marquesTxt)}</span>`;
+  }).join("");
+
+  html += `<div class="popup-section-title">Contacts collaborateurs</div>`;
+  if(contacts.length === 0){
+    html += `<div class="empty-note">Aucun contact renseigné pour cette ville pour le moment.</div>`;
+  }else{
+    html += contacts.map(c => {
+      const p = c.person;
+      const nom = `${p.prenom||""} ${(p.nom||"").toUpperCase()}`.trim();
+      return `<div class="contact-row">
+        <span class="contact-role">${escapeHtml(c.priorityLabel)}</span>
+        <span class="contact-name">${escapeHtml(nom)}</span>
+        ${p.telephone ? `<span class="contact-detail">📞 ${escapeHtml(p.telephone)}</span>` : ""}
+        ${p.email ? `<span class="contact-detail">✉️ <a href="${gmailLink(p.email)}" target="_blank" rel="noopener">${escapeHtml(p.email)}</a></span>` : ""}
+      </div>`;
+    }).join("");
+  }
+  html += `</div>`;
+  return html;
+}
+
+let carteMarqueFilter = new Set();
+
+function buildMarqueMultiPanel(){
+  const panel = $("#marqueMultiPanel");
+  if(panel.dataset.built === "1") { updateMarqueMultiBtnLabel(); return; }
+  panel.dataset.built = "1";
+  const marques = MARQUES.filter(m=>m!=="Toutes marques");
+  let html = `<div class="multi-select-actions">
+    <button type="button" class="link-btn" id="selectAllMarquesBtn">Tout sélectionner</button>
+    <button type="button" class="link-btn" id="deselectAllMarquesBtn">Tout désélectionner</button>
+  </div>`;
+  html += marques.map(m=>`<label><input type="checkbox" value="${escapeHtml(m)}"> ${escapeHtml(m)}</label>`).join("");
+  html += `<div style="border-top:1px solid var(--border);margin:6px 0 4px;padding-top:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-soft);">Regroupements</div>`;
+  const catOrder = ["STELLANTIS","ASIATIQUE","VOLKSWAGEN","FORD","MOTO","CAMION","SANS_MARQUE"];
+  html += catOrder.map(cat => {
+    const color = CATEGORY_COLORS[cat];
+    const label = CATEGORY_LABELS[cat];
+    return `<label><input type="checkbox" value="cat:${cat}"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-right:2px;"></span> Sites ${escapeHtml(label)}</label>`;
+  }).join("");
+  panel.innerHTML = html;
+  panel.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+    cb.addEventListener("change", ()=>{
+      if(cb.checked) carteMarqueFilter.add(cb.value); else carteMarqueFilter.delete(cb.value);
+      updateMarqueMultiBtnLabel();
+      renderCarteTab();
+    });
+  });
+  $("#selectAllMarquesBtn").addEventListener("click", ()=>{
+    panel.querySelectorAll("input[type=checkbox]").forEach(cb=>{ cb.checked = true; carteMarqueFilter.add(cb.value); });
+    updateMarqueMultiBtnLabel();
+    renderCarteTab();
+  });
+  $("#deselectAllMarquesBtn").addEventListener("click", ()=>{
+    panel.querySelectorAll("input[type=checkbox]").forEach(cb=>{ cb.checked = false; });
+    carteMarqueFilter.clear();
+    updateMarqueMultiBtnLabel();
+    renderCarteTab();
+  });
+  updateMarqueMultiBtnLabel();
+}
+function updateMarqueMultiBtnLabel(){
+  const n = carteMarqueFilter.size;
+  $("#marqueMultiBtn").textContent = n === 0 ? "Marques ▾" : `${n} marque${n>1?"s":""} ▾`;
+}
+$("#marqueMultiBtn").addEventListener("click", (e)=>{
+  e.stopPropagation();
+  $("#marqueMultiPanel").classList.toggle("show");
+});
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest("#marqueMultiSelect")){
+    $("#marqueMultiPanel").classList.remove("show");
+  }
+});
+
+const NO_BRAND_SOCIETES = new Set(["A3PRO","CAP 3000 CARROSSERIE","CARROSSERIE GRAND SUD","CGPA","LES TRAVAUX DU CAPISCOL","LES TRAVAUX DU CAPISCOL 2","NDK","PROMAUTO","SALVAZA"]);
+const CATEGORY_COLORS = {
+  STELLANTIS: "#1b6b8a",
+  ASIATIQUE: "#4a90a4",
+  VOLKSWAGEN: "#6b8fa8",
+  FORD: "#2d4a5c",
+  MOTO: "#8fb0c4",
+  CAMION: "#3d5a70",
+  SANS_MARQUE: "#4a4a4a",
+  MULTI: "#5b6b7a",
+  AUTRE: "#94a3ad",
+};
+const CATEGORY_LABELS = {
+  STELLANTIS: "Stellantis", ASIATIQUE: "Marques asiatiques & Volvo", VOLKSWAGEN: "Volkswagen",
+  FORD: "Ford", MOTO: "Moto", CAMION: "Camions", SANS_MARQUE: "Sans marque",
+};
+
+function getSiteCategory(c){
+  const soc = (c.societe||"").trim().toUpperCase();
+  if(NO_BRAND_SOCIETES.has(soc)) return "SANS_MARQUE";
+  const reseau = (c.reseau||"").trim().toUpperCase();
+  if(["STELLANTIS","ASIATIQUE","VOLKSWAGEN","CAMION","FORD","MOTO"].includes(reseau)) return reseau;
+  return "AUTRE";
+}
+function getVilleCategories(ville){
+  return new Set(getVilleConcessions(ville).map(getSiteCategory));
+}
+function getVilleColor(ville){
+  const cats = Array.from(getVilleCategories(ville));
+  if(cats.length === 1) return CATEGORY_COLORS[cats[0]] || CATEGORY_COLORS.AUTRE;
+  return CATEGORY_COLORS.MULTI;
+}
+
+function renderCarteTab(){
+  if(!mapInitDone){
+    leafletMap = L.map("mapDiv", { scrollWheelZoom: true }).setView([44.2, 2.5], 6);
+    L.tileLayer("https://data.geopf.fr/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&EXCEPTIONS=text/xml&FORMAT=image/png&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}", {
+      attribution: 'Carte &copy; <a href="https://www.ign.fr/">IGN</a> — <a href="https://www.geoportail.gouv.fr/">Géoportail</a>',
+      maxZoom: 18, minZoom: 5, className: "gtc-map-tiles"
+    }).addTo(leafletMap);
+    markersLayer = L.layerGroup().addTo(leafletMap);
+    mapInitDone = true;
+    setTimeout(()=> leafletMap.invalidateSize(), 200);
+  }else{
+    setTimeout(()=> leafletMap.invalidateSize(), 50);
+  }
+
+  const query = $("#searchInput").value.trim().toLowerCase();
+
+  const villesPresentes = Object.keys(VILLE_COORDS).filter(ville => getVilleConcessions(ville).length > 0);
+  const villesFiltered = villesPresentes.filter(ville => {
+    const sites = getVilleConcessions(ville);
+    const marquesVille = new Set();
+    sites.forEach(s => asArray(s.marques).forEach(m=>marquesVille.add(m)));
+    const matchesQuery = !query || ville.toLowerCase().includes(query) || Array.from(marquesVille).some(m=>m.toLowerCase().includes(query));
+    const villeCats = getVilleCategories(ville);
+    const matchesMarque = carteMarqueFilter.size === 0
+      || Array.from(marquesVille).some(m=>carteMarqueFilter.has(m))
+      || Array.from(villeCats).some(cat=>carteMarqueFilter.has("cat:"+cat));
+    return matchesQuery && matchesMarque;
+  });
+
+  $("#countBadge").textContent = `${villesFiltered.length} ville${villesFiltered.length>1?"s":""} affichée${villesFiltered.length>1?"s":""}`;
+
+  markersLayer.clearLayers();
+  villesFiltered.forEach(ville => {
+    const coord = VILLE_COORDS[ville];
+    const marker = L.circleMarker([coord.lat, coord.lon], {
+      radius: 7, weight: 2, color: "#ffffff", fillColor: getVilleColor(ville), fillOpacity: 0.92
+    });
+    marker.bindPopup(buildPopupHtml(ville), { closeButton: true, maxWidth: 300, className: "gtc-popup" });
+    marker.bindTooltip(ville, { permanent: false, direction: "top", offset: [0,-6] });
+    marker.on("mouseover", ()=> marker.openPopup());
+    marker.addTo(markersLayer);
+  });
+}
+
+$("#printMapBtn").addEventListener("click", ()=>{
+  document.body.classList.add("print-map-mode");
+  setTimeout(()=>{
+    if(leafletMap) leafletMap.invalidateSize();
+    window.print();
+  }, 150);
+});
+window.addEventListener("afterprint", ()=>{
+  document.body.classList.remove("print-map-mode");
+  if(leafletMap) leafletMap.invalidateSize();
+});
 
 loadData();
 </script>
