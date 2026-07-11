@@ -810,6 +810,19 @@ function getCheckedValues(key){
   return Array.from(document.querySelectorAll(`#grp_${key} input:checked`)).map(i=>i.value);
 }
 
+function findGroupeDoublons(values, excludeId){
+  const nom = (values.nom||"").trim().toLowerCase();
+  const prenom = (values.prenom||"").trim().toLowerCase();
+  const email = (values.email||"").trim().toLowerCase();
+  return dataStore.groupe.filter(item=>{
+    if(item.id === excludeId) return false;
+    const sameEmail = email && (item.email||"").trim().toLowerCase() === email;
+    const sameNomPrenom = nom && (item.nom||"").trim().toLowerCase() === nom
+      && prenom && (item.prenom||"").trim().toLowerCase() === prenom;
+    return sameEmail || sameNomPrenom;
+  });
+}
+
 async function handleSave(){
   const isGroupe = currentTab === "groupe";
   const isConcessions = currentTab === "concessions";
@@ -833,6 +846,17 @@ async function handleSave(){
   if(!values[requiredKey]){
     showToast(isGroupe ? "Le nom est obligatoire." : "Le nom de la société est obligatoire.");
     return;
+  }
+
+  if(isGroupe){
+    const doublons = findGroupeDoublons(values, editingId);
+    if(doublons.length > 0){
+      const liste = doublons.map(d => `• ${d.prenom} ${d.nom}${d.fonction ? " — "+d.fonction : ""}${d.villePrincipale ? " ("+d.villePrincipale+")" : ""}`).join("\n");
+      const continuer = confirm(
+        `⚠️ Doublon potentiel détecté !\n\nUne ou plusieurs fiches similaires existent déjà :\n${liste}\n\nVoulez-vous quand même enregistrer cette fiche ?`
+      );
+      if(!continuer) return;
+    }
   }
 
   const label = isGroupe ? `${values.prenom} ${values.nom}`.trim() : values.societe;
